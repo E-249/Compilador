@@ -1,11 +1,10 @@
 package ensamblador;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import ensamblador.Transcriptor.Modificador;
-import ensamblador.Transcriptor.Operacion;
-import ensamblador.Transcriptor.Registro;
 
 public class Automata {
 	
@@ -21,21 +20,28 @@ public class Automata {
 		return lineasReemplazadas;
 	}
 	
+	public static enum Estado {
+		INICIO,
+		ACCESO,
+		REGISTRO,
+		OPERACION,
+		COMPARACION,
+		COMENTARIO,
+		EXPANSION
+	}
+	
+	
 	// Llamar a normalizar previamente
 	public void interpretar(String linea) {
 		if (linea.length() < 3) return;
 		char[] simbolos = linea.toCharArray();
 		int indice = 0;
 		
-		Modificador modificadorIzq;
-		Registro registroIzq;
-		Operacion operacion;
-		Modificador modificadorDer;
-		Registro registroDer;
-		int valorDer;
+		HashMap<String, String> names = new HashMap<>();
 		
-		modificadorIzq = Transcriptor.modificadores.get(simbolos[indice]);
-		if (modificadorIzq != null) indice++;
+		
+		
+		}
 		
 	}
 

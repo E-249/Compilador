@@ -97,26 +97,29 @@ public class Interprete {
 	public void divAV(int left, int right) { stack[regs[left]] /= right; }
 	public void cmpAV(int left, int right) { cmp = stack[regs[left]] - right; }
 	// br reg
-	public void brcR(int reg) { PC = regs[reg] - 1; }
+	public void balR(int reg) { PC = regs[reg] - 1; }
 	public void bgtR(int reg) { if (cmp > 0) PC = regs[reg] - 1; }
 	public void bltR(int reg) { if (cmp < 0) PC = regs[reg] - 1; }
 	public void beqR(int reg) { if (cmp == 0) PC = regs[reg] - 1; }
 	public void bgeR(int reg) { if (cmp >= 0) PC = regs[reg] - 1; }
 	public void bleR(int reg) { if (cmp <= 0) PC = regs[reg] - 1; }
+	public void bneR(int reg) { if (cmp != 0) PC = regs[reg] - 1; }
 	// br acc
-	public void brcA(int reg) { PC = stack[regs[reg]] - 1; }
+	public void balA(int reg) { PC = stack[regs[reg]] - 1; }
 	public void bgtA(int reg) { if (cmp > 0) PC = stack[regs[reg]] - 1; }
 	public void bltA(int reg) { if (cmp < 0) PC = stack[regs[reg]] - 1; }
 	public void beqA(int reg) { if (cmp == 0) PC = stack[regs[reg]] - 1; }
 	public void bgeA(int reg) { if (cmp >= 0) PC = stack[regs[reg]] - 1; }
 	public void bleA(int reg) { if (cmp <= 0) PC = stack[regs[reg]] - 1; }
+	public void bneA(int reg) { if (cmp != 0) PC = stack[regs[reg]] - 1; }
 	// br val
-	public void brcV(int val) { PC = val - 1; }
+	public void balV(int val) { PC = val - 1; }
 	public void bgtV(int val) { if (cmp > 0) PC = val - 1; }
 	public void bltV(int val) { if (cmp < 0) PC = val - 1; }
 	public void beqV(int val) { if (cmp == 0) PC = val - 1; }
 	public void bgeV(int val) { if (cmp >= 0) PC = val - 1; }
 	public void bleV(int val) { if (cmp <= 0) PC = val - 1; }
+	public void bneV(int val) { if (cmp != 0) PC = val - 1; }
 	
 	public void make() {
 		final int DotProduct = 14;
@@ -154,10 +157,10 @@ public class Interprete {
 
 		addInstr(this::asgRV, R, here); //8
 		addInstr(this::addRV, R, 3); //9
-		addInstr(this::brcV, DotProduct); //10
+		addInstr(this::balV, DotProduct); //10
 		addInstr(this::asgRA, R, S); //11
 		addInstr(this::subRV, S, 1); //12
-		addInstr(this::brcV, halt); //13
+		addInstr(this::balV, halt); //13
 
 		// DotProduct
 		addInstr(this::asgRV, O, 0); //14
@@ -178,11 +181,11 @@ public class Interprete {
 		addInstr(this::addRR, O, E); //24
 
 		addInstr(this::addRV, A, 1); //25
-		addInstr(this::brcV, loop); //26
+		addInstr(this::balV, loop); //26
 	}
 
 	public static void main(String[] args) {
-		Interprete interprete = new Interprete(1024);
+		Interprete interprete = new Interprete(8);
 		interprete.make();
 		interprete.run();
 		System.out.println("Resultado: " + interprete.regs[O]);
