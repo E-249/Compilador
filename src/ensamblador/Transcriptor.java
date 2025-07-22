@@ -4,11 +4,26 @@ import java.util.HashMap;
 
 public class Transcriptor {
 	
+	// ^#?[AEIOUSBPR][:\+\-\*\/\?](#?[AEIOUSBPR]|[0-9]+)$|^([><=!]|>=|<=|=>|=<|<>|><)(#?[AEIOUSBPR]|[0-9]+)$
+	public static final String REG = "[AEIOUSBPR]";
+	public static final String ACC = "#?";
+	public static final String VAL = "[0-9]+";
+	public static final String OP = "[:\\+\\-\\*\\/\\?]";
+	public static final String CMP = "([><=!]|>=|<=|=>|=<|<>|><)";
+	
+	public static final String REG_OR_ACC = ACC + REG;
+	public static final String REG_OR_ACC_OR_VAL = '(' + REG_OR_ACC + '|' + VAL + ')';
+	
+	public static final String OPERACION = '^' + REG_OR_ACC + OP + REG_OR_ACC_OR_VAL + '$';
+	public static final String COMPARACION = '^' + CMP + REG_OR_ACC_OR_VAL + '$';
+	
+	public static final String REGEX = OPERACION + '|' + COMPARACION;
+	
 	public static enum Comentario {
 		DEF('#'),
 		WARN('!'),
 		INFO('?');
-		private final char simbolo;
+		public final char simbolo;
 		private Comentario(char simbolo) { this.simbolo = simbolo; }
 		public static void init(HashMap<Character, Comentario> comentarios) {
 			for (Comentario comentario : Comentario.values()) comentarios.put(comentario.simbolo, comentario); }
@@ -20,7 +35,7 @@ public class Transcriptor {
 		CLOSE_DEF(']'),
 		IT('^'),
 		HERE('@');
-		private final char simbolo;
+		public final char simbolo;
 		private Modificador(char simbolo) { this.simbolo = simbolo; }
 		public static void init(HashMap<Character, Modificador> modificadores) {
 			for (Modificador modificador : Modificador.values()) modificadores.put(modificador.simbolo, modificador); }
@@ -37,7 +52,7 @@ public class Transcriptor {
 		B('B'),
 		P('P'),
 		R('R');
-		private final char simbolo;
+		public final char simbolo;
 		private Registro(char simbolo) { this.simbolo = simbolo; }
 		public static void init(HashMap<Character, Registro> registros) {
 			for (Registro registro : Registro.values()) registros.put(registro.simbolo, registro); }
@@ -50,7 +65,7 @@ public class Transcriptor {
 		MUL('*'),
 		DIV('/'),
 		CMP('?');
-		private final char simbolo;
+		public final char simbolo;
 		private Operacion(char simbolo) { this.simbolo = simbolo; }
 		public static void init(HashMap<Character, Operacion> operaciones) {
 			for (Operacion operacion : Operacion.values()) operaciones.put(operacion.simbolo, operacion); }
@@ -59,8 +74,8 @@ public class Transcriptor {
 		GT('>'),
 		LT('<'),
 		EQ('='),
-		AL('.');
-		private final char simbolo;
+		AL('!');
+		public final char simbolo;
 		private Comparacion(char simbolo) { this.simbolo = simbolo; }
 		public static void init(HashMap<Character, Comparacion> comparaciones) {
 			for (Comparacion comparacion : Comparacion.values()) comparaciones.put(comparacion.simbolo, comparacion); }

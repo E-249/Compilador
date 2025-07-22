@@ -1,7 +1,9 @@
 package ensamblador;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
@@ -24,6 +26,18 @@ public class Lector {
 		} catch (IOException e) {
 			e.printStackTrace();
 			return null;
+		}
+	}
+	
+	public static void escribirArchivo(String ruta, String texto) {
+		try {
+			
+			BufferedWriter writer = new BufferedWriter(new FileWriter(ruta));
+			writer.write(texto);
+			writer.close();
+			
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 	
