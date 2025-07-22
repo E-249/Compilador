@@ -54,12 +54,12 @@ public class Interprete {
 //				VECTOR_Y = 2,
 //				VECTOR_Z = 3;
 		
-		final int THIS = -1;
+		final int THIS = 0 - 1;
 		stack[0] = 1;
 		stack[1] = 2;
 		stack[2] = 3;
 		
-		final int THAT = 2;
+		final int THAT = 3 - 1;
 		stack[3] = 4;
 		stack[4] = 5;
 		stack[5] = 6;
