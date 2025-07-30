@@ -1,0 +1,36 @@
+
+
+//LEXICO\\
+Valor:						"[0-9]+"
+Nombre:						"[a-zA-Z_]{2,}"
+Registro:					"[AEOIUSBPR]"
+Operacion:					"[\:\+\-\*\/\?]"
+Comparacion:				"[><=!]|>[<=]|<[=>]|=[<>]"
+ComentarioLinea:			"[\?\!]~"
+ComentarioMulti:			"~[^~]~"
+
+
+//SINTACTICO\\
+Acceso:						"#" Registro
+Otros:						Valor
+							| Nombre
+							| "@"
+RegAcc:						Registro
+							| Acceso
+RegAccVal:					RegAcc
+							| Otros
+
+InstrOp:					RegAcc Operacion RegAccVal
+InstrCmp:					Comparacion RegAccVal
+Instr:						InstrOp
+							| InstrCmp
+InstrLista:					InstrLista "," Instr
+							| InstrLista "\n" Instr
+							| Instr
+							
+Comentario:					ComentarioLinea
+							| ComentarioMulti
+
+Expansion:					Nombre "[" InstrLista "]"
+Llamada:					Nombre " " RegAccVal
+Etiqueta:					"@" Nombre

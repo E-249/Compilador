@@ -5,22 +5,27 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Transcriptor {
-
+	
 	private static final String
 			VALOR = "[0-9]+",
-			NOMBRE = "[a-zA-Z]{2,}",
+			NOMBRE = "[a-zA-Z_]{2,}",
 			
-			INSTR = Operacion.REGEX + "|" + Comparacion.REGEX;
+			INSTR = Operacion.REGEX + "|" + Comparacion.REGEX,
+			INSTR_LBL = INSTR + "|" + Expansion.LABEL;
 	
 	
 	public static final Pattern
+			COMENTARIO = Pattern.compile(Comentario.REGEX, Pattern.MULTILINE),
+			
 			LLAMADA = Pattern.compile(Expansion.IN, Pattern.MULTILINE),
 			EXPANSION = Pattern.compile(Expansion.OUT, Pattern.MULTILINE),
 	
 			OPERACION = Pattern.compile(Operacion.REGEX, Pattern.MULTILINE),
 			COMPARACION = Pattern.compile(Comparacion.REGEX, Pattern.MULTILINE),
 			
-			INSTRUCCION = Pattern.compile(INSTR, Pattern.MULTILINE);
+			LABEL = Pattern.compile(Expansion.LABEL, Pattern.MULTILINE),
+			INSTRUCCION = Pattern.compile(INSTR, Pattern.MULTILINE),
+			INSTRUCCION_LABEL = Pattern.compile(INSTR_LBL, Pattern.MULTILINE);
 
 	public static enum Comentario {
 		DEF("~"),
@@ -33,6 +38,7 @@ public class Transcriptor {
 		@Override public String toString() { return simbolo; }
 		public static final String MULTI_LINE = "(?<![" + WARN + INFO + "])" + DEF + "[^" + DEF + "]*" + DEF;
 		public static final String ONE_LINE = "[" + INFO + WARN + "]" + DEF + ".*";
+		public static final String REGEX = ONE_LINE + "|" + MULTI_LINE;
 	}
 
 	public static enum Expansion {
@@ -44,8 +50,9 @@ public class Transcriptor {
 		public static void init(HashMap<String, Expansion> expansiones) {
 			for (Expansion expansion : Expansion.values()) expansiones.put(expansion.simbolo, expansion); }
 		@Override public String toString() { return simbolo; }
-		public static final String IN = "(" + NOMBRE + ") ([^\\r\\n]*)";
-		public static final String OUT = "(" + NOMBRE + ") *" + OPEN + "([^" + CLOSE + "]*)" + CLOSE;
+		public static final String IN = "^(" + NOMBRE + ") ?([^\\r\\n]*)";
+		public static final String OUT = "^(" + NOMBRE + ") *" + OPEN + "([^" + CLOSE + "]*)" + CLOSE;
+		public static final String LABEL = "^" + Modificador.AQUI + "(" + NOMBRE + ")";
 	}
 
 	public static enum Modificador {
@@ -76,7 +83,7 @@ public class Transcriptor {
 		@Override public String toString() { return simbolo; }
 		public static final String REG = "[" + A + E + O + I + U + S + B + P + R + "]";
 		public static final String REG_ACC = Modificador.ACC + "?" + REG;
-		public static final String REG_ACC_VAL = REG_ACC + "|" + VALOR + "|" + Modificador.AQUI;
+		public static final String REG_ACC_VAL = REG_ACC + "|" + VALOR + "|" + Modificador.AQUI + "|" + NOMBRE;
 	}
 
 	public static enum Operacion {
@@ -92,7 +99,7 @@ public class Transcriptor {
 			for (Operacion operacion : Operacion.values()) operaciones.put(operacion.simbolo, operacion); }
 		@Override public String toString() { return simbolo; }
 		public static final String OP = "[" + ASG + ADD + SUB + MUL + DIV + CMP + "]";
-		public static final String REGEX = "(" + Registro.REG_ACC + ")[\\s]*(" + OP + ")[\\s]*(" + Registro.REG_ACC_VAL + ")";
+		public static final String REGEX = "(" + Registro.REG_ACC + ")[\\s]*(" + OP + ")[\\s]*(" + Registro.REG_ACC_VAL + ")$";
 	}
 	
 	public static enum Comparacion {
@@ -106,7 +113,11 @@ public class Transcriptor {
 			for (Comparacion comparacion : Comparacion.values()) comparaciones.put(comparacion.simbolo, comparacion); }
 		@Override public String toString() { return simbolo; }
 		public static final String CMP = "[" + GT + LT + EQ + AL + "]";
-		public static final String REGEX = CMP + "|>[=<]|<[=>]|=[<>]";
+		public static final String COMB =
+				"|" + GT + "[" + LT + EQ + "]" +
+				"|" + LT + "[" + EQ + GT + "]" +
+				"|" + EQ + "[" + LT + GT + "]";
+		public static final String REGEX = "^(" + CMP + COMB + ")[\\s]*(" + Registro.REG_ACC_VAL + ")$";
 	}
 
 	public final static HashMap<String, Modificador> modificadores = new HashMap<>();
@@ -140,9 +151,5 @@ public class Transcriptor {
 			for (int i = 1; i <= matcher.groupCount(); i++)
 				System.out.println("Grupo " + i + ": " + matcher.group(i));
 	}
-
-	public static void main(String[] args) {
-		System.out.println(Comentario.MULTI_LINE);
-	}
-
+	
 }
