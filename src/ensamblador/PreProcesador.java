@@ -4,36 +4,118 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import ensamblador.Transcriptor.Comentario;
+import ensamblador.Transcriptor.Comparacion;
+import ensamblador.Transcriptor.Expansion;
+import ensamblador.Transcriptor.Modificador;
+import ensamblador.Transcriptor.Operacion;
+import ensamblador.Transcriptor.Registro;
 
 public class PreProcesador {
 	
+	private static final String VALOR			= Transcriptor.VALOR;
+	private static final String NOMBRE			= Transcriptor.NOMBRE;
+	private static final String REGISTRO		= Registro.REGEX;
+	private static final String OPERACION		= Operacion.REGEX;
+	private static final String COMPARACION		= Comparacion.REGEX;
+	private static final String COMENTARIO		= Comentario.REGEX;
+	private static final String EXPANSION		= Expansion.REGEX;
+	//////////////////////////////////////////////////////////
+	public PreProcesador() {
+		
+		String acceso =				Modificador.ACC + REGISTRO;
+		String otros =				VALOR
+									+"|"+ NOMBRE
+									+"|"+ Modificador.AQUI;
+		String regAcc =				acceso
+									+"|"+ REGISTRO;
+		String regAccVal =			otros
+									+"|"+ acceso
+									+"|"+ REGISTRO;
+		
+		String instrOp =			"("+regAcc+")\\s*("+OPERACION+")\\s*("+regAccVal+")";
+		String instrCmp =			"("+COMPARACION+")\\s*("+regAccVal+")";
+		String etiq =				Modificador.AQUI+"("+NOMBRE+")";
+		
+		String instr =				instrOp
+									+"|"+ instrCmp;
+		String instrEtiq =			instrOp
+									+"|"+ instrCmp
+									+"|"+ etiq;
+		
+		String expan =				Modificador.NO_AQUI+"("+NOMBRE+")[ \\t]*"+ EXPANSION;
+		String llam =				Modificador.NO_AQUI+"("+NOMBRE+")[ \\t]+("+regAccVal+")"
+									+"|"+ Modificador.NO_AQUI+"("+NOMBRE+")";
+		
+		comentario				= Pattern.compile(COMENTARIO, Pattern.MULTILINE);
+		expansion				= Pattern.compile(expan, Pattern.MULTILINE);
+		llamada					= Pattern.compile(llam, Pattern.MULTILINE);
+		instruccion				= Pattern.compile(instr, Pattern.MULTILINE);
+		instruccionEtiqueta		= Pattern.compile(instrEtiq, Pattern.MULTILINE);
+		etiqueta				= Pattern.compile(etiq, Pattern.MULTILINE);
+	}
+	//////////////////////////////////////////////////////////
+	private final Pattern comentario;
+	private final Pattern expansion;
+	private final Pattern llamada;
+	@SuppressWarnings("unused") private final Pattern instruccion;
+	private final Pattern instruccionEtiqueta;
+	private final Pattern etiqueta;
+	
+	private static final Pattern VACIO			= Pattern.compile("^\\s*\\n", Pattern.MULTILINE);
+	private static final Pattern INDENTACION	= Pattern.compile("^[ \\t]+|[ \\t]+$", Pattern.MULTILINE);
+	
+	private String eliminarIndentacion(String lineas) { return INDENTACION.matcher(lineas).replaceAll(""); }
+	private String borrarVacias(String lineas) { return VACIO.matcher(lineas).replaceAll(""); }
+	private String borrarFrom(Matcher matcher) { return borrarVacias(matcher.replaceAll("")); }
+	private String corregir(String lineas) { return eliminarIndentacion(borrarVacias(lineas)); }
+	
 	private String ignorarComentarios(String lineas) {
-		Matcher matcher = Transcriptor.COMENTARIO.matcher(lineas);
-		return matcher.replaceAll("");
+		Matcher matcher = comentario.matcher(lineas);
+		return borrarFrom(matcher);
 	}
 	
 	private String guardarExpansiones(String lineas, HashMap<String, String> expansiones) {
-		Matcher matcher = Transcriptor.EXPANSION.matcher(lineas);
+		Matcher matcher = expansion.matcher(lineas);
 		
 		while (matcher.find())
 			expansiones.put(matcher.group(1), matcher.group(2));
 		
-		return matcher.replaceAll("");
+		return borrarFrom(matcher);
 	}
 	
-	private String reemplazarSustituto(String lineas, String sustituto) {
-		return sustituto != null ?
-				lineas.replaceAll(Transcriptor.Expansion.SUSTITUTO.toString(), sustituto)
-				: lineas;
+	private String reemplazarSustituto(Matcher matcher, HashMap<String, String> expansiones) {
+
+		String nombre = matcher.group(1);
+		if (nombre == null)
+			nombre = matcher.group(3);
+		
+		String lineas = expansiones.get(nombre);
+		
+		String sustituto = matcher.group(2);
+		if (sustituto == null)
+			return lineas;
+		
+		if (expansiones.containsKey(sustituto))
+			sustituto = expansiones.get(sustituto);
+		
+		return lineas.replaceAll(Expansion.SUSTITUTO.toString(), sustituto);
 	}
 	
 	private String reemplazarExpansiones(String lineas, HashMap<String, String> expansiones) {
-		return Transcriptor.LLAMADA.matcher(lineas)
-				.replaceAll(mr -> reemplazarSustituto(expansiones.get(mr.group(1)), mr.group(2)));
+		Matcher matcher = llamada.matcher(lineas);
+		StringBuffer str = new StringBuffer();
+		
+		while (matcher.find())
+			matcher.appendReplacement(str, reemplazarSustituto(matcher, expansiones));
+		matcher.appendTail(str);
+		return str.toString();
 	}
 	
 	private LinkedList<String> normalizar(String lineas) {
-		Matcher matcher = Transcriptor.INSTRUCCION_LABEL.matcher(lineas);
+		Matcher matcher = instruccionEtiqueta.matcher(lineas);
 		LinkedList<String> instrucciones = new LinkedList<>();
 		
 		while (matcher.find())
@@ -42,6 +124,7 @@ public class PreProcesador {
 	}
 	
 	private LinkedList<String> guardarLabels(LinkedList<String> instrucciones, HashMap<String, String> expansiones) {
+		expansiones.clear();
 		LinkedList<String> nuevas = new LinkedList<>();
 		Iterator<String> it = instrucciones.iterator();
 		
@@ -51,7 +134,7 @@ public class PreProcesador {
 		while (it.hasNext()) {
 			str = it.next();
 			
-			matcher = Transcriptor.LABEL.matcher(str);
+			matcher = etiqueta.matcher(str);
 			if (matcher.matches())
 				expansiones.put(matcher.group(1), String.valueOf(nuevas.size() + 1));
 			else
@@ -73,13 +156,17 @@ public class PreProcesador {
 		HashMap<String, String> expansiones = new HashMap<>();
 		LinkedList<String> instrucciones;
 
+		lineas = eliminarIndentacion(lineas);
+		
 		lineas = ignorarComentarios(lineas);
 		lineas = guardarExpansiones(lineas, expansiones);
-		lineas = reemplazarExpansiones(lineas, expansiones); // Colocar en adelante
+		lineas = reemplazarExpansiones(lineas, expansiones);
+		lineas = corregir(lineas);
 		
 		instrucciones = normalizar(lineas);
-		//instrucciones = guardarLabels(instrucciones, expansiones);
-		//lineas = reemplazarAqui(instrucciones);
+		instrucciones = guardarLabels(instrucciones, expansiones);
+		lineas = reemplazarAqui(instrucciones);
+		lineas = reemplazarExpansiones(lineas, expansiones);
 		return lineas;
 	}
 	
@@ -133,14 +220,14 @@ public class PreProcesador {
 				PX [1]
 				PY [2]
 				POSICION [2]
-				POSICION_X [1]
-				POSICION_Y [2]
-				POSICION_Z [3]
+					POSICION_X [1]
+					POSICION_Y [2]
+					POSICION_Z [3]
 				ENTIDAD [4]
-				ENTIDAD_POSICION [0]
-				!~ POSICION_X [1]
-				!~ POSICION_Y [2]
-				!~ POSICION_Z [2]
+					ENTIDAD_POSICION [0]
+						!~ POSICION_X [1]
+						!~ POSICION_Y [2]
+						!~ POSICION_Z [2]
 				
 				?~ Code
 				
@@ -171,60 +258,5 @@ public class PreProcesador {
 	            """;
 		System.out.println("{Lineas}\n" + p.reemplazar(lineas));
 	}
-	
-//	private static void ignorarComentariosTest() {
-//		PreProcesador p = new PreProcesador();
-//		String lineas =
-//				"""
-//				?~ aaaa
-//				aaa !~ si
-//				b~as
-//				sadas~b
-//				""";
-//		System.out.println("{Lineas}\n" + p.ignorarComentarios(lineas));
-//	}
-//	
-//	private static void reemplazarExpansionTest() {
-//		PreProcesador p = new PreProcesador();
-//		String lineas = """
-//				push A
-//				pop B
-//				""";
-//		HashMap<String, String> expansiones = new HashMap<>();
-//		expansiones.put("push", "hola");
-//		expansiones.put("pop", "adios");
-//		System.out.println(p.reemplazarExpansiones(lineas, expansiones));
-//	}
-//	
-//	private static void guardarExpansionTest() {
-//		PreProcesador p = new PreProcesador();
-//		String lineas = """
-//				push [A + S]
-//				pop [B]
-//				""";
-//		HashMap<String, String> expansiones = new HashMap<>();
-//		p.guardarExpansiones(lineas, expansiones);
-//		System.out.println(expansiones);
-//	}
-//	
-//	private static void reemplazarAquiTest() {
-//		PreProcesador p = new PreProcesador();
-//		String lineas = """
-//				push [
-//					A
-//				]
-//				S + A
-//				
-//				S : @
-//				S + B
-//				
-//				S + @
-//				S + 3
-//				S + E
-//				S + U
-//				#S : @
-//				""";
-//		System.out.println(p.reemplazarAqui(lineas));
-//	}
 
 }

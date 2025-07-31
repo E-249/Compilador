@@ -4,20 +4,24 @@ import java.util.ArrayList;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public class Interprete {
+import ensamblador.Transcriptor.Registro;
 
-	public static final int
-			A = 0,
-			E = 1,
-			O = 2,
-			I = 3,
-			U = 4,
-		
-			S = 5,
-			B = 6,
-			P = 7,
-			R = 8;
-	public static final int REGISTER_CNT = 9;
+public class Procesador {
+	
+	public static final int getReg(String reg) {
+		return Transcriptor.registros.get(reg).ordinal();
+	}
+	
+	public static final int getOp(String op) {
+		return Transcriptor.operaciones.get(op).ordinal();
+	}
+	
+	public static final int getCmp(String cmp) {
+		return Transcriptor.operaciones.get(cmp).ordinal();
+	}
+	
+	public static final int REGISTRO_CNT = Registro.values().length;
+	public static final int OPERACION_CNT = Registro.values().length;
 
 	int PC;
 	int cmp;
@@ -25,8 +29,8 @@ public class Interprete {
 	int[] regs;
 	int[] stack;
 
-	public Interprete(int stackSize) {
-		regs = new int[REGISTER_CNT];
+	public Procesador(int stackSize) {
+		regs = new int[REGISTRO_CNT];
 		instr = new ArrayList<>();
 		stack = new int[stackSize];
 	}
@@ -49,12 +53,23 @@ public class Interprete {
 		for (PC = 0; PC < instr.size(); PC++) {
 			cnt = "[" + PC + "]";
 			instr.get(PC).run();
-			for (int i = 0; i < REGISTER_CNT; i++)
+			for (int i = 0; i < REGISTRO_CNT; i++)
 				System.out.print(regs[i] + " ");
 			System.out.println(cnt);
 		}
 	}
+	private ArrayList<BiConsumer<Integer, Integer>> opRegReg = new ArrayList<>(OPERACION_CNT);
+	private ArrayList<BiConsumer<Integer, Integer>> opAccReg = new ArrayList<>(OPERACION_CNT);
+	private ArrayList<BiConsumer<Integer, Integer>> opRegAcc = new ArrayList<>(OPERACION_CNT);
+	private ArrayList<BiConsumer<Integer, Integer>> opAccAeg = new ArrayList<>(OPERACION_CNT);
 	// reg op reg
+	{
+		opRegReg.add((left, right) -> regs[left]  = regs[right]);
+		opRegReg.add((left, right) -> regs[left] += regs[right]);
+		opRegReg.add((left, right) -> regs[left]  = regs[right]);
+		opRegReg.add((left, right) -> regs[left]  = regs[right]);
+		opRegReg.add((left, right) -> regs[left]  = regs[right]);
+	}
 	public void asgRR(int left, int right) { regs[left]  = regs[right]; }
 	public void addRR(int left, int right) { regs[left] += regs[right]; }
 	public void subRR(int left, int right) { regs[left] -= regs[right]; }
@@ -185,7 +200,7 @@ public class Interprete {
 	}
 
 	public static void main(String[] args) {
-		Interprete interprete = new Interprete(8);
+		Procesador interprete = new Procesador(8);
 		interprete.make();
 		interprete.run();
 		System.out.println("Resultado: " + interprete.regs[O]);

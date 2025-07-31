@@ -9,7 +9,6 @@ Comparacion:				"[><=!]|>[<=]|<[=>]|=[<>]"
 ComentarioLinea:			"[\?\!]~"
 ComentarioMulti:			"~[^~]~"
 
-
 //SINTACTICO\\
 Acceso:						"#" Registro
 Otros:						Valor
@@ -17,7 +16,8 @@ Otros:						Valor
 							| "@"
 RegAcc:						Registro
 							| Acceso
-RegAccVal:					RegAcc
+RegAccVal:					Registro
+							| Acceso
 							| Otros
 
 InstrOp:					RegAcc Operacion RegAccVal
@@ -31,6 +31,7 @@ InstrLista:					InstrLista "," Instr
 Comentario:					ComentarioLinea
 							| ComentarioMulti
 
-Expansion:					Nombre "[" InstrLista "]"
+Expansion:					Nombre "[" (^"]"*) "]"
 Llamada:					Nombre " " RegAccVal
+							| Nombre
 Etiqueta:					"@" Nombre
