@@ -1,45 +1,73 @@
 package ensamblador;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import ensamblador.Transcriptor.Comparacion;
+import ensamblador.Transcriptor.Operacion;
 import ensamblador.Transcriptor.Registro;
 
 public class Procesador {
 	
-	public static final int getReg(String reg) {
-		return Transcriptor.registros.get(reg).ordinal();
-	}
+	private static final int REGISTRO_CNT = Registro.values().length;
+	private static final int OPERACION_CNT = Registro.values().length;
+	private static final int COMPARACION_CNT = Comparacion.values().length + 3; // 3: GE, LE, NE
 	
-	public static final int getOp(String op) {
-		return Transcriptor.operaciones.get(op).ordinal();
-	}
-	
-	public static final int getCmp(String cmp) {
-		return Transcriptor.operaciones.get(cmp).ordinal();
-	}
-	
-	public static final int REGISTRO_CNT = Registro.values().length;
-	public static final int OPERACION_CNT = Registro.values().length;
-
 	int PC;
 	int cmp;
 	ArrayList<Runnable> instr;
-	int[] regs;
+	HashMap<String, Integer> regs;
 	int[] stack;
 
 	public Procesador(int stackSize) {
-		regs = new int[REGISTRO_CNT];
-		instr = new ArrayList<>();
 		stack = new int[stackSize];
+		instr = new ArrayList<>();
+		instr.add(null);
+		
+		regs = new HashMap<>(REGISTRO_CNT);
+		operaciones = new HashMap<>(OPERACION_CNT);
+		comparaciones = new HashMap<>(COMPARACION_CNT);
+		
+		regs.put("A", 0);
+		regs.put("E", 0);
+		regs.put("O", 0);
+		regs.put("I", 0);
+		regs.put("U", 0);
+		regs.put("S", 0);
+		regs.put("B", 0);
+		regs.put("P", 0);
+		regs.put("R", 0);
+		
+		operaciones.put(":", (_,	right) -> right);
+		operaciones.put("+", (left, right) -> left + right);
+		operaciones.put("-", (left, right) -> left - right);
+		operaciones.put("*", (left, right) -> left * right);
+		operaciones.put("/", (left, right) -> left / right);
+		operaciones.put("?", (left, right) -> { cmp = left - right; return left; });
+		
+		comparaciones.put(">",  target -> cmp >  0 ? target - 1 : PC);
+		comparaciones.put("<",  target -> cmp <  0 ? target - 1 : PC);
+		comparaciones.put("=",  target -> cmp == 0 ? target - 1 : PC);
+		comparaciones.put("!",  target -> target - 1);
+		comparaciones.put("=>", target -> cmp >= 0 ? target - 1 : PC);
+		comparaciones.put("<=", target -> cmp <= 0 ? target - 1 : PC);
+		comparaciones.put("<>", target -> cmp != 0 ? target - 1 : PC);
+		comparaciones.put(">=", comparaciones.get("=>"));
+		comparaciones.put("=<", comparaciones.get("<="));
+		comparaciones.put("><", comparaciones.get("<>"));
 	}
 
 	public void addInstr(Runnable instruction) {
 		instr.add(instruction);
 	}
 	
-	public void addInstr(BiConsumer<Integer, Integer> instruction, int left, int right) {
+	public void addInstr(int left, BiConsumer<Integer, Integer> instruction, int right) {
 		instr.add(() -> instruction.accept(left, right));
 	}
 	
@@ -48,162 +76,76 @@ public class Procesador {
 	}
 
 	public void run() {
-		String cnt;
-		System.out.println("A E O I U S B P R");
-		for (PC = 0; PC < instr.size(); PC++) {
-			cnt = "[" + PC + "]";
+		for (PC = 1; PC < instr.size() && PC != 0; PC++) {
+			String cnt = "[" + PC + "] ";
 			instr.get(PC).run();
-			for (int i = 0; i < REGISTRO_CNT; i++)
-				System.out.print(regs[i] + " ");
-			System.out.println(cnt);
+			System.out.println(cnt + regs+", "+cmp);
 		}
 	}
-	private ArrayList<BiConsumer<Integer, Integer>> opRegReg = new ArrayList<>(OPERACION_CNT);
-	private ArrayList<BiConsumer<Integer, Integer>> opAccReg = new ArrayList<>(OPERACION_CNT);
-	private ArrayList<BiConsumer<Integer, Integer>> opRegAcc = new ArrayList<>(OPERACION_CNT);
-	private ArrayList<BiConsumer<Integer, Integer>> opAccAeg = new ArrayList<>(OPERACION_CNT);
-	// reg op reg
-	{
-		opRegReg.add((left, right) -> regs[left]  = regs[right]);
-		opRegReg.add((left, right) -> regs[left] += regs[right]);
-		opRegReg.add((left, right) -> regs[left]  = regs[right]);
-		opRegReg.add((left, right) -> regs[left]  = regs[right]);
-		opRegReg.add((left, right) -> regs[left]  = regs[right]);
+	private HashMap<String, BiFunction<Integer, Integer, Integer>> operaciones;
+	private HashMap<String, Function<Integer, Integer>> comparaciones;
+	
+	private static interface TriConsumer<T, U, R> { void accept(T t, U u, R r); }
+	private TriConsumer<String, BiFunction<Integer, Integer, Integer>, String>
+			opRegReg = (left, op, right) -> regs.put(left,			op.apply(regs.get(left), 		regs.get(right))),
+			opAccReg = (left, op, right) -> stack[regs.get(left)] =	op.apply(regs.get(left), 		regs.get(right)),
+			opRegAcc = (left, op, right) -> regs.put(left, 			op.apply(regs.get(left), 		stack[regs.get(right)])),
+			opAccAcc = (left, op, right) -> stack[regs.get(left)] =	op.apply(stack[regs.get(left)],	stack[regs.get(right)]),
+			opRegVal = (left, op, right) -> regs.put(left,			op.apply(regs.get(left),		Integer.parseInt(right))),
+			opAccVal = (left, op, right) -> stack[regs.get(left)] =	op.apply(stack[regs.get(left)],	Integer.parseInt(right));
+	
+	private BiConsumer<Function<Integer, Integer>, String>
+			cmpReg = (cmp, target) -> PC = cmp.apply(regs.get(target)),
+			cmpAcc = (cmp, target) -> PC = cmp.apply(stack[regs.get(target)]),
+			cmpVal = (cmp, target) -> PC = cmp.apply(Integer.parseInt(target));
+	
+	private static final Pattern OP_REG_REG = Pattern.compile("^(" +Registro.REGEX+")[\\s]*("+Operacion.REGEX+")[\\s]*(" +Registro.REGEX+")$");
+	private static final Pattern OP_ACC_REG = Pattern.compile("^#("+Registro.REGEX+")[\\s]*("+Operacion.REGEX+")[\\s]*(" +Registro.REGEX+")$");
+	private static final Pattern OP_REG_ACC = Pattern.compile("^(" +Registro.REGEX+")[\\s]*("+Operacion.REGEX+")[\\s]*#("+Registro.REGEX+")$");
+	private static final Pattern OP_ACC_ACC = Pattern.compile("^#("+Registro.REGEX+")[\\s]*("+Operacion.REGEX+")[\\s]*#("+Registro.REGEX+")$");
+	private static final Pattern OP_REG_VAL = Pattern.compile("^(" +Registro.REGEX+")[\\s]*("+Operacion.REGEX+")[\\s]*(" +Transcriptor.VALOR+")$");
+	private static final Pattern OP_ACC_VAL = Pattern.compile("^#("+Registro.REGEX+")[\\s]*("+Operacion.REGEX+")[\\s]*(" +Transcriptor.VALOR+")$");
+	
+	private static final Pattern CMP_REG = Pattern.compile("^("+Comparacion.REGEX+")[\\s]*(" +Registro.REGEX+")$");
+	private static final Pattern CMP_ACC = Pattern.compile("^("+Comparacion.REGEX+")[\\s]*#("+Registro.REGEX+")$");
+	private static final Pattern CMP_VAL = Pattern.compile("^("+Comparacion.REGEX+")[\\s]*(" +Transcriptor.VALOR+")$");
+	
+	public void addOp(TriConsumer<String, BiFunction<Integer, Integer, Integer>, String> operacion, Matcher matcher) {
+		addInstr(() -> operacion.accept(matcher.group(1), operaciones.get(matcher.group(2)), matcher.group(3)));
 	}
-	public void asgRR(int left, int right) { regs[left]  = regs[right]; }
-	public void addRR(int left, int right) { regs[left] += regs[right]; }
-	public void subRR(int left, int right) { regs[left] -= regs[right]; }
-	public void mulRR(int left, int right) { regs[left] *= regs[right]; }
-	public void divRR(int left, int right) { regs[left] /= regs[right]; }
-	public void cmpRR(int left, int right) { cmp = regs[left] - regs[right]; }
-	// acc op reg
-	public void asgAR(int left, int right) { stack[regs[left]]  = regs[right]; }
-	public void addAR(int left, int right) { stack[regs[left]] += regs[right]; }
-	public void subAR(int left, int right) { stack[regs[left]] -= regs[right]; }
-	public void mulAR(int left, int right) { stack[regs[left]] *= regs[right]; }
-	public void divAR(int left, int right) { stack[regs[left]] /= regs[right]; }
-	public void cmpAR(int left, int right) { cmp = stack[regs[left]] - regs[right]; }
-	// reg op acc
-	public void asgRA(int left, int right) { regs[left]  = stack[regs[right]]; }
-	public void addRA(int left, int right) { regs[left] += stack[regs[right]]; }
-	public void subRA(int left, int right) { regs[left] -= stack[regs[right]]; }
-	public void mulRA(int left, int right) { regs[left] *= stack[regs[right]]; }
-	public void divRA(int left, int right) { regs[left] /= stack[regs[right]]; }
-	public void cmpRA(int left, int right) { cmp = regs[left] - stack[regs[right]]; }
-	// acc op acc
-	public void asgPP(int left, int right) { stack[regs[left]]  = stack[regs[right]]; }
-	public void addPP(int left, int right) { stack[regs[left]] += stack[regs[right]]; }
-	public void subPP(int left, int right) { stack[regs[left]] -= stack[regs[right]]; }
-	public void mulPP(int left, int right) { stack[regs[left]] *= stack[regs[right]]; }
-	public void divPP(int left, int right) { stack[regs[left]] /= stack[regs[right]]; }
-	public void cmpPP(int left, int right) { cmp = stack[regs[left]] - stack[regs[right]]; }
-	// reg op val
-	public void asgRV(int left, int right) { regs[left]  = right; }
-	public void addRV(int left, int right) { regs[left] += right; }
-	public void subRV(int left, int right) { regs[left] -= right; }
-	public void mulRV(int left, int right) { regs[left] *= right; }
-	public void divRV(int left, int right) { regs[left] /= right; }
-	public void cmpRV(int left, int right) { cmp = regs[left] - right; }
-	// acc op val
-	public void asgAV(int left, int right) { stack[regs[left]]  = right; }
-	public void addAV(int left, int right) { stack[regs[left]] += right; }
-	public void subAV(int left, int right) { stack[regs[left]] -= right; }
-	public void mulAV(int left, int right) { stack[regs[left]] *= right; }
-	public void divAV(int left, int right) { stack[regs[left]] /= right; }
-	public void cmpAV(int left, int right) { cmp = stack[regs[left]] - right; }
-	// br reg
-	public void balR(int reg) { PC = regs[reg] - 1; }
-	public void bgtR(int reg) { if (cmp > 0) PC = regs[reg] - 1; }
-	public void bltR(int reg) { if (cmp < 0) PC = regs[reg] - 1; }
-	public void beqR(int reg) { if (cmp == 0) PC = regs[reg] - 1; }
-	public void bgeR(int reg) { if (cmp >= 0) PC = regs[reg] - 1; }
-	public void bleR(int reg) { if (cmp <= 0) PC = regs[reg] - 1; }
-	public void bneR(int reg) { if (cmp != 0) PC = regs[reg] - 1; }
-	// br acc
-	public void balA(int reg) { PC = stack[regs[reg]] - 1; }
-	public void bgtA(int reg) { if (cmp > 0) PC = stack[regs[reg]] - 1; }
-	public void bltA(int reg) { if (cmp < 0) PC = stack[regs[reg]] - 1; }
-	public void beqA(int reg) { if (cmp == 0) PC = stack[regs[reg]] - 1; }
-	public void bgeA(int reg) { if (cmp >= 0) PC = stack[regs[reg]] - 1; }
-	public void bleA(int reg) { if (cmp <= 0) PC = stack[regs[reg]] - 1; }
-	public void bneA(int reg) { if (cmp != 0) PC = stack[regs[reg]] - 1; }
-	// br val
-	public void balV(int val) { PC = val - 1; }
-	public void bgtV(int val) { if (cmp > 0) PC = val - 1; }
-	public void bltV(int val) { if (cmp < 0) PC = val - 1; }
-	public void beqV(int val) { if (cmp == 0) PC = val - 1; }
-	public void bgeV(int val) { if (cmp >= 0) PC = val - 1; }
-	public void bleV(int val) { if (cmp <= 0) PC = val - 1; }
-	public void bneV(int val) { if (cmp != 0) PC = val - 1; }
+	
+	public void addCmp(BiConsumer<Function<Integer, Integer>, String> comparacion, Matcher matcher) {
+		addInstr(() -> comparacion.accept(comparaciones.get(matcher.group(1)), matcher.group(2)));
+	}
+	
+	public void add(String linea) {
+		Matcher matcher;
+			 if ((matcher = OP_REG_REG.matcher(linea)).find()) addOp(opRegReg, matcher);
+		else if ((matcher = OP_ACC_REG.matcher(linea)).find()) addOp(opAccReg, matcher);
+		else if ((matcher = OP_REG_ACC.matcher(linea)).find()) addOp(opRegAcc, matcher);
+		else if ((matcher = OP_ACC_ACC.matcher(linea)).find()) addOp(opAccAcc, matcher);
+		else if ((matcher = OP_REG_VAL.matcher(linea)).find()) addOp(opRegVal, matcher);
+		else if ((matcher = OP_ACC_VAL.matcher(linea)).find()) addOp(opAccVal, matcher);
+		
+		else if ((matcher = CMP_REG.matcher(linea)).find())	addCmp(cmpReg, matcher);
+		else if ((matcher = CMP_ACC.matcher(linea)).find()) addCmp(cmpAcc, matcher);
+		else if ((matcher = CMP_VAL.matcher(linea)).find()) addCmp(cmpVal, matcher);
+	}
 	
 	public void make() {
-		final int DotProduct = 14;
-		final int here = 8, loop = 16;
-		final int halt = 27;
-		
-//		final int // VECTOR
-//				VECTOR_X = 1,
-//				VECTOR_Y = 2,
-//				VECTOR_Z = 3;
-		
-		final int THIS = 0 - 1;
-		stack[0] = 1;
-		stack[1] = 2;
-		stack[2] = 3;
-		
-		final int THAT = 3 - 1;
-		stack[3] = 4;
-		stack[4] = 5;
-		stack[5] = 6;
-		
-		regs[S] = 5;
-
-		addInstr(this::asgRR, P, B); //0
-		addInstr(this::addRV, P, THIS); //1
-		addInstr(this::asgRR, I, P); //2
-
-		addInstr(this::asgRR, P, B); //3
-		addInstr(this::addRV, P, THAT); //4
-
-		addInstr(this::asgRR, U, P); //5
-
-		addInstr(this::addRV, S, 1); //6
-		addInstr(this::asgAR, S, R); //7
-
-		addInstr(this::asgRV, R, here); //8
-		addInstr(this::addRV, R, 3); //9
-		addInstr(this::balV, DotProduct); //10
-		addInstr(this::asgRA, R, S); //11
-		addInstr(this::subRV, S, 1); //12
-		addInstr(this::balV, halt); //13
-
-		// DotProduct
-		addInstr(this::asgRV, O, 0); //14
-
-		addInstr(this::asgRV, A, 1); //15
-		// loop
-		addInstr(this::cmpRV, A, 3); //16
-		addInstr(this::bgtR, R); //17
-
-		addInstr(this::asgRR, P, I); //18
-		addInstr(this::addRR, P, A); //19
-		addInstr(this::asgRA, E, P); //20
-
-		addInstr(this::asgRR, P, U); //21
-		addInstr(this::addRR, P, A); //22
-		addInstr(this::mulRA, E, P); //23
-
-		addInstr(this::addRR, O, E); //24
-
-		addInstr(this::addRV, A, 1); //25
-		addInstr(this::balV, loop); //26
+		add("O : 3");
+		add("O * 2");
+		add("O ? 1");
+		add(">= 0");
+		add("O / 4");
+		add("O * 10");
 	}
 
 	public static void main(String[] args) {
 		Procesador interprete = new Procesador(8);
 		interprete.make();
 		interprete.run();
-		System.out.println("Resultado: " + interprete.regs[O]);
+		System.out.println("Resultado: " + interprete.regs.get(Registro.O.toString()));
 	}
 
 }

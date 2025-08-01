@@ -35,9 +35,9 @@ public class PreProcesador {
 									+"|"+ acceso
 									+"|"+ REGISTRO;
 		
-		String instrOp =			"("+regAcc+")\\s*("+OPERACION+")\\s*("+regAccVal+")";
-		String instrCmp =			"("+COMPARACION+")\\s*("+regAccVal+")";
-		String etiq =				Modificador.AQUI+"("+NOMBRE+")";
+		String instrOp =			"^("+regAcc+")\\s*("+OPERACION+")\\s*("+regAccVal+")$";
+		String instrCmp =			"^("+COMPARACION+")\\s*("+regAccVal+")$";
+		String etiq =				"^"+Modificador.AQUI+"("+NOMBRE+")$";
 		
 		String instr =				instrOp
 									+"|"+ instrCmp;
