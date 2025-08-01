@@ -1,6 +1,7 @@
 package ensamblador;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -62,6 +63,12 @@ public class Procesador {
 		comparaciones.put("=<", comparaciones.get("<="));
 		comparaciones.put("><", comparaciones.get("<>"));
 	}
+	
+	public Procesador(String lineas, int stackSize) {
+		this(stackSize);
+		for (String linea : lineas.split("\n"))
+			add(linea);
+	}
 
 	public void addInstr(Runnable instruction) {
 		instr.add(instruction);
@@ -76,10 +83,19 @@ public class Procesador {
 	}
 
 	public void run() {
-		for (PC = 1; PC < instr.size() && PC != 0; PC++) {
+		for (PC = 1; PC < instr.size() && PC > 0; PC++)
+			instr.get(PC).run();
+	}
+	public void runPrintEnd() {
+		for (PC = 1; PC < instr.size() && PC > 0; PC++)
+			instr.get(PC).run();
+		System.out.println(this);
+	}
+	public void runPrint() {
+		for (PC = 1; PC < instr.size() && PC > 0; PC++) {
 			String cnt = "[" + PC + "] ";
 			instr.get(PC).run();
-			System.out.println(cnt + regs+", "+cmp);
+			System.out.println(cnt + regs+", cmp="+cmp+", "+Arrays.toString(stack));
 		}
 	}
 	private HashMap<String, BiFunction<Integer, Integer, Integer>> operaciones;
@@ -132,20 +148,9 @@ public class Procesador {
 		else if ((matcher = CMP_VAL.matcher(linea)).find()) addCmp(cmpVal, matcher);
 	}
 	
-	public void make() {
-		add("O : 3");
-		add("O * 2");
-		add("O ? 1");
-		add(">= 0");
-		add("O / 4");
-		add("O * 10");
-	}
-
-	public static void main(String[] args) {
-		Procesador interprete = new Procesador(8);
-		interprete.make();
-		interprete.run();
-		System.out.println("Resultado: " + interprete.regs.get(Registro.O.toString()));
+	@Override
+	public String toString() {
+		return "[" + PC + "] " + regs+", cmp="+cmp+", "+Arrays.toString(stack);
 	}
 
 }
