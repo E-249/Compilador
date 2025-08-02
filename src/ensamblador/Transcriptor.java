@@ -1,8 +1,6 @@
 package ensamblador;
 
 import java.util.HashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 // Clase para lexico
 public class Transcriptor {
@@ -107,23 +105,6 @@ public class Transcriptor {
 		Registro.init(registros);
 		Operacion.init(operaciones);
 		Comparacion.init(comparaciones);
-	}
-
-	public static void regex(String regex, String string, String subst) {
-		System.out.println(regex);
-		System.out.println();
-		System.out.println(string);
-		System.out.println();
-		System.out.println(subst);
-		System.out.println();
-
-		Pattern pattern = Pattern.compile(regex, Pattern.MULTILINE);
-		Matcher matcher = pattern.matcher(string);
-		while (matcher.find()) {
-			matcher.group(1);
-		}
-			for (int i = 1; i <= matcher.groupCount(); i++)
-				System.out.println("Grupo " + i + ": " + matcher.group(i));
 	}
 	
 }

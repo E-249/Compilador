@@ -70,18 +70,6 @@ public class Procesador {
 			add(linea);
 	}
 
-	public void addInstr(Runnable instruction) {
-		instr.add(instruction);
-	}
-	
-	public void addInstr(int left, BiConsumer<Integer, Integer> instruction, int right) {
-		instr.add(() -> instruction.accept(left, right));
-	}
-	
-	public void addInstr(Consumer<Integer> instruction, int target) {
-		instr.add(() -> instruction.accept(target));
-	}
-
 	public void run() {
 		for (PC = 1; PC < instr.size() && PC > 0; PC++)
 			instr.get(PC).run();
@@ -98,21 +86,24 @@ public class Procesador {
 			System.out.println(cnt + regs+", cmp="+cmp+", "+Arrays.toString(stack));
 		}
 	}
+	private int getStack(String reg) { return stack[regs.get(reg) - 1]; }
+	private void setStack(String reg, int value) { stack[regs.get(reg) - 1] = value; }
+	
 	private HashMap<String, BiFunction<Integer, Integer, Integer>> operaciones;
 	private HashMap<String, Function<Integer, Integer>> comparaciones;
 	
 	private static interface TriConsumer<T, U, R> { void accept(T t, U u, R r); }
 	private TriConsumer<String, BiFunction<Integer, Integer, Integer>, String>
-			opRegReg = (left, op, right) -> regs.put(left,			op.apply(regs.get(left), 		regs.get(right))),
-			opAccReg = (left, op, right) -> stack[regs.get(left)] =	op.apply(regs.get(left), 		regs.get(right)),
-			opRegAcc = (left, op, right) -> regs.put(left, 			op.apply(regs.get(left), 		stack[regs.get(right)])),
-			opAccAcc = (left, op, right) -> stack[regs.get(left)] =	op.apply(stack[regs.get(left)],	stack[regs.get(right)]),
-			opRegVal = (left, op, right) -> regs.put(left,			op.apply(regs.get(left),		Integer.parseInt(right))),
-			opAccVal = (left, op, right) -> stack[regs.get(left)] =	op.apply(stack[regs.get(left)],	Integer.parseInt(right));
+			opRegReg = (left, op, right) -> regs.put(left, op.apply(regs.get(left), regs.get(right))),
+			opAccReg = (left, op, right) -> setStack(left, op.apply(regs.get(left), regs.get(right))),
+			opRegAcc = (left, op, right) -> regs.put(left, op.apply(regs.get(left), getStack(right))),
+			opAccAcc = (left, op, right) -> setStack(left, op.apply(getStack(left), getStack(right))),
+			opRegVal = (left, op, right) -> regs.put(left, op.apply(regs.get(left), Integer.parseInt(right))),
+			opAccVal = (left, op, right) -> setStack(left, op.apply(getStack(left), Integer.parseInt(right)));
 	
 	private BiConsumer<Function<Integer, Integer>, String>
 			cmpReg = (cmp, target) -> PC = cmp.apply(regs.get(target)),
-			cmpAcc = (cmp, target) -> PC = cmp.apply(stack[regs.get(target)]),
+			cmpAcc = (cmp, target) -> PC = cmp.apply(getStack(target)),
 			cmpVal = (cmp, target) -> PC = cmp.apply(Integer.parseInt(target));
 	
 	private static final Pattern OP_REG_REG = Pattern.compile("^(" +Registro.REGEX+")[\\s]*("+Operacion.REGEX+")[\\s]*(" +Registro.REGEX+")$");
@@ -125,6 +116,22 @@ public class Procesador {
 	private static final Pattern CMP_REG = Pattern.compile("^("+Comparacion.REGEX+")[\\s]*(" +Registro.REGEX+")$");
 	private static final Pattern CMP_ACC = Pattern.compile("^("+Comparacion.REGEX+")[\\s]*#("+Registro.REGEX+")$");
 	private static final Pattern CMP_VAL = Pattern.compile("^("+Comparacion.REGEX+")[\\s]*(" +Transcriptor.VALOR+")$");
+
+	public void addInstr(Runnable instruccion) {
+		instr.add(instruccion);
+	}
+	
+	public void addInstr(int left, BiConsumer<Integer, Integer> instruction, int right) {
+		instr.add(() -> instruction.accept(left, right));
+	}
+	
+	public void addInstr(Consumer<Integer> instruction, int target) {
+		instr.add(() -> instruction.accept(target));
+	}
+	
+	public void addJavaInstr(Runnable instruccion) {
+		addInstr(instruccion);
+	}
 	
 	public void addOp(TriConsumer<String, BiFunction<Integer, Integer, Integer>, String> operacion, Matcher matcher) {
 		addInstr(() -> operacion.accept(matcher.group(1), operaciones.get(matcher.group(2)), matcher.group(3)));
