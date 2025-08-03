@@ -5,6 +5,8 @@ import java.io.IOException;
 
 public class Launcher {
 	
+	public static final String VERSION = "1.1";
+	
 	public static void make(String archive)
 			throws FileNotFoundException, IOException {
 		
@@ -84,29 +86,29 @@ public class Launcher {
 	
 	private static enum MakeRunOption { MAKE, RUN, MAKE_PRINT, MAKE_RUN, MAKE_CREATE_RUN }
 	private static enum PrintOption { NONE, END, ALWAYS }
-	
+
+	static final int EXITO = 0;
+	static final int SIN_RUTA = 1;
+	static final int STACK_SIN_TAMANNO = 2;
+	static final int OPCION_DESCONOCIDA = 3;
+	static final int ARCHIVO_NO_ENCONTRADO = 4;
+	static final int ERROR_EN_ARCHIVO = 5;
+	static final int INDICE_PILA_SUPERIOR = 6;
+	static final int INDICE_PILA_FUERA_DE_RANGO = 7;
 	// ./cos "test/Entity"
 	// ./cos "test/Entity" -mr -s 16 -p true
 	public static void main(String[] args) {
-		final int EXITO = 0;
-		final int SIN_RUTA = 1;
-		final int STACK_SIN_TAMANNO = 2;
-		final int OPCION_DESCONOCIDA = 3;
-		final int ARCHIVO_NO_ENCONTRADO = 4;
-		final int ERROR_EN_ARCHIVO = 5;
-		final int INDICE_PILA_SUPERIOR = 6;
-		final int INDICE_PILA_NO_POSITIVO = 7;
-		args = new String[1];
-		args[0] = "C:\\Users\\User\\Documents\\_\\PROYECTOS\\Java\\Compilador (cos)\\BugFixTester";
 		
 		if (args.length < 1) {
 			System.err.println("No se ha incluido la ruta. Usa el flag \"-h\" para más información."); System.exit(SIN_RUTA); }
 		
 		if (args[0].equals("-h")) {
+			System.out.println("Ensamblador COS");
+			System.out.println("Versión: " + VERSION);
 			System.out.print("""
-					Por defecto: "java -jar cos.jar [archivo] -s 16 -mr -ep
+					Por defecto: "java -jar cos.jar [archivo] -s 16 -mr -ep"
 					
-					archivo: Nombre del archivo ignorando la extensión
+					archivo: ruta del archivo ignorando la extensión
 					
 					-m (make): ensambla archivo ".cos", creando ".ccos"
 					-mp (make print): ensambla archivo ".cos", imprimiendo ".ccos"
@@ -174,9 +176,7 @@ public class Launcher {
 		} catch (IOException e) {
 			System.err.println("Error al leer o crear el archivo para:\n" + archive); System.exit(ERROR_EN_ARCHIVO);
 		} catch (ArrayIndexOutOfBoundsException e) {
-			System.err.println("Indíce superior al rango de la pila."); System.exit(INDICE_PILA_NO_POSITIVO);
-		} catch (NegativeArraySizeException e) {
-			System.err.println("Indíce no positivo para la pila."); System.exit(INDICE_PILA_SUPERIOR);
+			System.err.println("Indíce fuera del rango de la pila."); System.exit(INDICE_PILA_FUERA_DE_RANGO);
 		}
 	}
 	

@@ -31,22 +31,27 @@ public class PreProcesador {
 									+"|"+ Modificador.AQUI;
 		String regAcc =				acceso
 									+"|"+ REGISTRO;
-		String regAccVal =			otros
+		String regAccVal =			VALOR
+									+"|"+ acceso
+									+"|"+ REGISTRO;
+		String regAccOtr =			otros
 									+"|"+ acceso
 									+"|"+ REGISTRO;
 		
-		String instrOp =			"^("+regAcc+")\\s*("+OPERACION+")\\s*("+regAccVal+")$";
-		String instrCmp =			"^("+COMPARACION+")\\s*("+regAccVal+")$";
+		String instrOpNom =			"^("+regAcc+")\\s*("+OPERACION+")\\s*("+regAccOtr+")$";
+		String instrCmpNom =			"^("+COMPARACION+")\\s*("+regAccOtr+")$";
 		String etiq =				"^"+Modificador.AQUI+"("+NOMBRE+")$";
-		
-		String instr =				instrOp
-									+"|"+ instrCmp;
-		String instrEtiq =			instrOp
-									+"|"+ instrCmp
+		String instrEtiq =			instrOpNom
+									+"|"+ instrCmpNom
 									+"|"+ etiq;
 		
+		String instrOp =			"^("+regAcc+")\\s*("+OPERACION+")\\s*("+regAccVal+")$";
+		String instrCmp =			"^("+COMPARACION+")\\s*("+regAccVal+")$";
+		String instr =				instrOp
+									+"|"+ instrCmp;
+		
 		String expan =				Modificador.NO_AQUI+"("+NOMBRE+")[ \\t]*"+ EXPANSION;
-		String llam =				Modificador.NO_AQUI+"("+NOMBRE+")[ \\t]+("+regAccVal+")"
+		String llam =				Modificador.NO_AQUI+"("+NOMBRE+")[ \\t]+("+regAccOtr+")"
 									+"|"+ Modificador.NO_AQUI+"("+NOMBRE+")";
 		
 		comentario				= Pattern.compile(COMENTARIO, Pattern.MULTILINE);
@@ -60,7 +65,7 @@ public class PreProcesador {
 	private final Pattern comentario;
 	private final Pattern expansion;
 	private final Pattern llamada;
-	@SuppressWarnings("unused") private final Pattern instruccion;
+	private final Pattern instruccion;
 	private final Pattern instruccionEtiqueta;
 	private final Pattern etiqueta;
 	
@@ -93,6 +98,8 @@ public class PreProcesador {
 			nombre = matcher.group(3);
 		
 		String lineas = expansiones.get(nombre);
+		if (lineas == null)
+			return nombre;
 		
 		String sustituto = matcher.group(2);
 		if (sustituto == null)
@@ -152,6 +159,18 @@ public class PreProcesador {
 		return str.toString();
 	}
 	
+	private String ignorarResiduos(String lineas) {
+		Matcher matcher = instruccion.matcher(lineas);
+		StringBuffer str = new StringBuffer();
+		
+		if (matcher.find())
+			str.append(matcher.group());
+		while (matcher.find())
+			str.append('\n').append(matcher.group());
+		
+		return str.toString();
+	}
+	
 	public String reemplazar(String lineas) {
 		HashMap<String, String> expansiones = new HashMap<>();
 		LinkedList<String> instrucciones;
@@ -167,6 +186,7 @@ public class PreProcesador {
 		instrucciones = guardarLabels(instrucciones, expansiones);
 		lineas = reemplazarAqui(instrucciones);
 		lineas = reemplazarExpansiones(lineas, expansiones);
+		lineas = ignorarResiduos(lineas);
 		return lineas;
 	}
 
