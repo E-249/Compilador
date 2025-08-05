@@ -75,6 +75,8 @@ public class Launcher {
 	static final int ERROR_EN_ARCHIVO = 5;
 	static final int INDICE_PILA_SUPERIOR = 6;
 	static final int INDICE_PILA_FUERA_DE_RANGO = 7;
+	static final int FUNCIONES_O_PARAMETROS_ERRONEOS = 8;
+	static final int ERROR_DESCONOCIDO = 9;
 	// ./cos "test/Entity"
 	// ./cos "test/Entity" -mr -s 16 -p true
 	public static void main(String[] args) {
@@ -154,11 +156,15 @@ public class Launcher {
 			}
 		
 		} catch (FileNotFoundException e) {
-			System.err.println("Archivo no encontrado:\n" + archive); System.exit(ARCHIVO_NO_ENCONTRADO);
+			System.err.println("[ERROR] Archivo no encontrado:\n" + archive); System.exit(ARCHIVO_NO_ENCONTRADO);
 		} catch (IOException e) {
-			System.err.println("Error al leer o crear el archivo para:\n" + archive); System.exit(ERROR_EN_ARCHIVO);
+			System.err.println("[ERROR] Error al leer o crear el archivo para:\n" + archive); System.exit(ERROR_EN_ARCHIVO);
 		} catch (ArrayIndexOutOfBoundsException e) {
-			System.err.println("Indíce fuera del rango de la pila."); System.exit(INDICE_PILA_FUERA_DE_RANGO);
+			System.err.println("[ERROR] Indíce fuera del rango de la pila."); System.exit(INDICE_PILA_FUERA_DE_RANGO);
+		} catch (NullPointerException e) {
+			System.err.println("[ERROR] Funciones o parámetros erróneos."); System.exit(FUNCIONES_O_PARAMETROS_ERRONEOS);
+		} catch (Exception e) {
+			System.err.println("[ERROR] Error desconocido."); System.exit(ERROR_DESCONOCIDO);
 		}
 	}
 	
