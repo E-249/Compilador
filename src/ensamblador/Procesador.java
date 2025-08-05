@@ -3,6 +3,7 @@ package ensamblador;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Scanner;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -150,6 +151,8 @@ public class Procesador {
 	
 	private void instruccionesExternas() {
 		operaciones.put("$sayChar$", (left, right) -> { System.out.print((char) (int) right); return left; });
+		operaciones.put("$listenChar$", (_, _) -> {
+			try (Scanner sc = new Scanner(System.in)) { return (int) sc.next().charAt(0); }});
 	}
 	
 }
