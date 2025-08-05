@@ -177,6 +177,18 @@ public class PreProcesador {
 		return str.toString();
 	}
 	
+	public String contarLineas(String lineas) {
+		String[] lineasSplit = lineas.split("\n");
+		StringBuffer str = new StringBuffer();
+		
+		if (lineasSplit.length > 0)
+			str.append("[1]\t").append(lineasSplit[0]);
+		for (int i = 1; i < lineasSplit.length; i++)
+			str.append("\n[").append(i + 1).append("]\t").append(lineasSplit[i]);
+		
+		return str.toString();
+	}
+	
 	public String reemplazar(String lineas) {
 		HashMap<String, String> expansiones = new HashMap<>();
 		LinkedList<String> instrucciones;

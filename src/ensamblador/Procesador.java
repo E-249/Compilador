@@ -145,11 +145,11 @@ public class Procesador {
 	
 	@Override
 	public String toString() {
-		return "[" + PC + "]\t" + regs+", cmp="+cmp+", "+Arrays.toString(stack);
+		return regs+", cmp="+cmp+", "+Arrays.toString(stack);
 	}
 	
 	private void instruccionesExternas() {
-		operaciones.put("$sayChar$", (left, right) -> { System.out.print((char) (int) right); return left + right; });
+		operaciones.put("$sayChar$", (left, right) -> { System.out.print((char) (int) right); return left; });
 	}
 	
 }
