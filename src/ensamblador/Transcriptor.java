@@ -6,8 +6,9 @@ import java.util.HashMap;
 public class Transcriptor {
 	
 	public static final String
-			VALOR = "[0-9]+",
-			NOMBRE = "[a-zA-Z_]{2,}";
+			VALOR = "[+-]?[0-9]+",
+			NOMBRE = "[a-zA-Z_]{2,}",
+			CARACTER = "'(.)'";
 
 	public static enum Comentario {
 		DEF("~"),
@@ -36,11 +37,13 @@ public class Transcriptor {
 	public static enum Modificador {
 		ACC("#"),
 		AQUI("@"),
+		EXT("\\$"),
 		NEXT(",?\n?");
 		private final String simbolo;
 		private Modificador(String simbolo) { this.simbolo = simbolo; }
 		@Override public String toString() { return simbolo; }
 		public static final String NO_AQUI = "(?<!["+AQUI+"a-zA-Z_])";
+		public static final String EXT_FUNC = EXT + NOMBRE + EXT;
 	}
 
 	public static enum Registro {
@@ -59,7 +62,9 @@ public class Transcriptor {
 		public static void init(HashMap<String, Registro> registros) {
 			for (Registro registro : Registro.values()) registros.put(registro.simbolo, registro); }
 		@Override public String toString() { return simbolo; }
-		public static final String REGEX = "[" + A + E + O + I + U + S + B + P + R + "]";
+		public static final String MAYUS =""+ A + E + O + I + U + S + B + P + R;
+		public static final String MINUS = MAYUS.toLowerCase();
+		public static final String REGEX = "[" + MAYUS + MINUS + "]";
 	}
 
 	public static enum Operacion {
@@ -68,43 +73,46 @@ public class Transcriptor {
 		SUB("\\-"),
 		MUL("\\*"),
 		DIV("\\/"),
-		CMP("\\?");
+		CMP("\\?"),
+		
+		AND("\\&"),
+		OR("\\|"),
+		XOR("\\%");
 		private final String simbolo;
 		private Operacion(String simbolo) { this.simbolo = simbolo; }
 		public static void init(HashMap<String, Operacion> operaciones) {
 			for (Operacion operacion : Operacion.values()) operaciones.put(operacion.simbolo, operacion); }
 		@Override public String toString() { return simbolo; }
-		public static final String REGEX = "[" + ASG + ADD + SUB + MUL + DIV + CMP + "]";
+		public static final String REGEX = "[" + ASG + ADD + SUB + MUL + DIV + CMP + AND + OR + XOR + "]"
+										+"|"+Modificador.EXT_FUNC;
 	}
 	
-	public static enum Comparacion {
+	public static enum Salto {
 		GT(">"),
 		LT("<"),
 		EQ("="),
 		AL("!");
 		public final String simbolo;
-		private Comparacion(String simbolo) { this.simbolo = simbolo; }
-		public static void init(HashMap<String, Comparacion> comparaciones) {
-			for (Comparacion comparacion : Comparacion.values()) comparaciones.put(comparacion.simbolo, comparacion); }
+		private Salto(String simbolo) { this.simbolo = simbolo; }
+		public static void init(HashMap<String, Salto> saltos) {
+			for (Salto salto : Salto.values()) saltos.put(salto.simbolo, salto); }
 		@Override public String toString() { return simbolo; }
 		public static final String CMP = "[" + GT + LT + EQ + AL + "]";
 		public static final String COMB =
 				"|" + GT + "[" + LT + EQ + "]" +
 				"|" + LT + "[" + EQ + GT + "]" +
 				"|" + EQ + "[" + LT + GT + "]";
-		public static final String REGEX = CMP + COMB;
+		public static final String REGEX = CMP + COMB
+										+"|"+Modificador.EXT_FUNC;
 	}
-
-	public final static HashMap<String, Modificador> modificadores = new HashMap<>();
+	
 	public final static HashMap<String, Registro> registros = new HashMap<>();
 	public final static HashMap<String, Operacion> operaciones = new HashMap<>();
-	public final static HashMap<String, Comparacion> comparaciones = new HashMap<>();
-	public final static HashMap<String, Expansion> expansiones = new HashMap<>();
-	public final static HashMap<String, Comentario> comentarios = new HashMap<>();
+	public final static HashMap<String, Salto> saltos = new HashMap<>();
 	static {
 		Registro.init(registros);
 		Operacion.init(operaciones);
-		Comparacion.init(comparaciones);
+		Salto.init(saltos);
 	}
 	
 }

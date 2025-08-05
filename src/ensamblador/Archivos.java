@@ -33,5 +33,10 @@ public class Archivos {
 		writer.close();
 			
 	}
+	
+	public String ignorarExtension(String ruta) {
+		int dot = ruta.lastIndexOf('.');
+		return ruta.substring(0, dot);
+	}
 
 }

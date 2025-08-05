@@ -6,20 +6,16 @@ import java.util.LinkedList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import ensamblador.Transcriptor.Comentario;
-import ensamblador.Transcriptor.Comparacion;
-import ensamblador.Transcriptor.Expansion;
-import ensamblador.Transcriptor.Modificador;
-import ensamblador.Transcriptor.Operacion;
-import ensamblador.Transcriptor.Registro;
+import ensamblador.Transcriptor.*;
 
 public class PreProcesador {
 	
 	private static final String VALOR			= Transcriptor.VALOR;
 	private static final String NOMBRE			= Transcriptor.NOMBRE;
+	private static final String CARACTER		= Transcriptor.CARACTER;
 	private static final String REGISTRO		= Registro.REGEX;
 	private static final String OPERACION		= Operacion.REGEX;
-	private static final String COMPARACION		= Comparacion.REGEX;
+	private static final String COMPARACION		= Salto.REGEX;
 	private static final String COMENTARIO		= Comentario.REGEX;
 	private static final String EXPANSION		= Expansion.REGEX;
 	//////////////////////////////////////////////////////////
@@ -38,17 +34,17 @@ public class PreProcesador {
 									+"|"+ acceso
 									+"|"+ REGISTRO;
 		
-		String instrOpNom =			"^("+regAcc+")\\s*("+OPERACION+")\\s*("+regAccOtr+")$";
-		String instrCmpNom =			"^("+COMPARACION+")\\s*("+regAccOtr+")$";
+		String instrOp =			"^("+regAcc+")[ \\t]*("+OPERACION+")[ \\t]*("+regAccVal+")$";
+		String instrSalto =			"^("+COMPARACION+")[ \\t]*("+regAccVal+")$";
+		String instr =				instrOp
+									+"|"+ instrSalto;
+		
+		String instrOpNom =			"^("+regAcc+")[ \\t]*("+OPERACION+")[ \\t]*("+regAccOtr+")$";
+		String instrCmpNom =		"^("+COMPARACION+")[ \\t]*("+regAccOtr+")$";
 		String etiq =				"^"+Modificador.AQUI+"("+NOMBRE+")$";
 		String instrEtiq =			instrOpNom
 									+"|"+ instrCmpNom
 									+"|"+ etiq;
-		
-		String instrOp =			"^("+regAcc+")\\s*("+OPERACION+")\\s*("+regAccVal+")$";
-		String instrCmp =			"^("+COMPARACION+")\\s*("+regAccVal+")$";
-		String instr =				instrOp
-									+"|"+ instrCmp;
 		
 		String expan =				Modificador.NO_AQUI+"("+NOMBRE+")[ \\t]*"+ EXPANSION;
 		String llam =				Modificador.NO_AQUI+"("+NOMBRE+")[ \\t]+("+regAccOtr+")"
@@ -80,6 +76,16 @@ public class PreProcesador {
 	private String ignorarComentarios(String lineas) {
 		Matcher matcher = comentario.matcher(lineas);
 		return borrarFrom(matcher);
+	}
+	
+	private String reemplazarCaracteres(String lineas) {
+		Matcher matcher = Pattern.compile(CARACTER, Pattern.DOTALL).matcher(lineas);
+		StringBuffer str = new StringBuffer();
+		
+		while (matcher.find())
+			matcher.appendReplacement(str, String.valueOf((int) matcher.group(1).charAt(0)));
+		matcher.appendTail(str);
+		return str.toString();
 	}
 	
 	private String guardarExpansiones(String lineas, HashMap<String, String> expansiones) {
@@ -178,6 +184,7 @@ public class PreProcesador {
 		lineas = eliminarIndentacion(lineas);
 		
 		lineas = ignorarComentarios(lineas);
+		lineas = reemplazarCaracteres(lineas);
 		lineas = guardarExpansiones(lineas, expansiones);
 		lineas = reemplazarExpansiones(lineas, expansiones);
 		lineas = corregir(lineas);

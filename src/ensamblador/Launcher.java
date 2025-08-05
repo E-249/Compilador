@@ -11,29 +11,29 @@ public class Launcher {
 			throws FileNotFoundException, IOException {
 		
 		var a = new Archivos();
-		String leer = a.leerArchivo(archive + ".cos");
+		String leer = a.leerArchivo(archive); //.cos
 		
 		var pp = new PreProcesador();
 		String reemplazado = pp.reemplazar(leer);
-		a.escribirArchivo(archive + ".ccos", reemplazado);
+		a.escribirArchivo(a.ignorarExtension(archive) + ".ccos", reemplazado);
 	}
 	
 	public static void makePrint(String archive)
 			throws FileNotFoundException, IOException {
 		
 		var a = new Archivos();
-		String leer = a.leerArchivo(archive + ".cos");
+		String leer = a.leerArchivo(archive); //.cos
 		
 		var pp = new PreProcesador();
 		String reemplazado = pp.reemplazar(leer);
-		System.out.println(reemplazado);
+		System.out.print(reemplazado);
 	}
 	
 	public static void run(String archive, int stackSize, PrintOption printOption)
 			throws FileNotFoundException, IOException {
 		
 		var a = new Archivos();
-		String leer = a.leerArchivo(archive + ".ccos");
+		String leer = a.leerArchivo(archive); //.ccos
 		
 		var p = new Procesador(leer, stackSize);
 		switch (printOption) {
@@ -49,7 +49,7 @@ public class Launcher {
 			throws FileNotFoundException, IOException {
 		
 		var a = new Archivos();
-		String leer = a.leerArchivo(archive + ".cos");
+		String leer = a.leerArchivo(archive); //.cos
 		
 		var pp = new PreProcesador();
 		String reemplazado = pp.reemplazar(leer);
@@ -64,27 +64,7 @@ public class Launcher {
 		}
 	}
 	
-	public static void makeSaveRun(String archive, int stackSize, PrintOption printOption)
-			throws FileNotFoundException, IOException {
-		
-		var a = new Archivos();
-		String leer = a.leerArchivo(archive + ".cos");
-		
-		var pp = new PreProcesador();
-		String reemplazado = pp.reemplazar(leer);
-		a.escribirArchivo(archive + ".ccos", reemplazado);
-		
-		var p = new Procesador(reemplazado, stackSize);
-		switch (printOption) {
-		
-		case NONE -> p.run();
-		case END -> p.runPrintEnd();
-		case ALWAYS -> p.runPrint();
-		
-		}
-	}
-	
-	private static enum MakeRunOption { MAKE, RUN, MAKE_PRINT, MAKE_RUN, MAKE_CREATE_RUN }
+	private static enum MakeRunOption { MAKE, RUN, MAKE_PRINT, MAKE_RUN }
 	private static enum PrintOption { NONE, END, ALWAYS }
 
 	static final int EXITO = 0;
@@ -108,19 +88,23 @@ public class Launcher {
 			System.out.print("""
 					Por defecto: "java -jar cos.jar [archivo] -s 16 -mr -ep"
 					
-					archivo: ruta del archivo ignorando la extensión
+					archivo: ruta del archivo incluyendo su extensión
 					
 					-m (make): ensambla archivo ".cos", creando ".ccos"
 					-mp (make print): ensambla archivo ".cos", imprimiendo ".ccos"
 					-r (run): corre archivo ".ccos"
 					-mr (make run): ensambla y corre archivo ".cos", sin crear ".ccos"
-					-mcr (make create run): ensambla y corre archivo ".cos", creando ".ccos"
 					
 					-s [tamaño] (size): tamaño de la pila. Cada unidad equivale al tamaño de un entero (int)
 					
 					-np (no print): no imprime datos
 					-ep (end print): imprime datos tras terminar la ejecución
 					-ap (always print): imprime datos por cada instrucción ejecutada
+					""");
+			System.out.println("""
+					
+					Funciones: formato E$op$O (o $cmp$A)
+					$sayChar$: imprime el carácter del valor en O, mantiene E intacto
 					""");
 			System.exit(EXITO);
 		}
@@ -138,13 +122,6 @@ public class Launcher {
 				stackSize = Integer.parseInt(args[i]);
 			}
 			
-			else if (args[i].equals("-np"))
-				printOption = PrintOption.NONE;
-			else if (args[i].equals("-ep"))
-				printOption = PrintOption.END;
-			else if (args[i].equals("-ap"))
-				printOption = PrintOption.ALWAYS;
-			
 			else if (args[i].equals("-m"))
 				makeRunOption = MakeRunOption.MAKE;
 			else if (args[i].equals("-mp"))
@@ -153,8 +130,14 @@ public class Launcher {
 				makeRunOption = MakeRunOption.RUN;
 			else if (args[i].equals("-mr"))
 				makeRunOption = MakeRunOption.MAKE_RUN;
-			else if (args[i].equals("-mcr"))
-				makeRunOption = MakeRunOption.MAKE_CREATE_RUN;
+			
+			else if (args[i].equals("-np"))
+				printOption = PrintOption.NONE;
+			else if (args[i].equals("-ep"))
+				printOption = PrintOption.END;
+			else if (args[i].equals("-ap"))
+				printOption = PrintOption.ALWAYS;
+			
 			else {
 				System.err.println("Opciones desconocidas"); System.exit(OPCION_DESCONOCIDA); }
 		}
@@ -167,7 +150,6 @@ public class Launcher {
 			case MAKE_PRINT -> makePrint(archive);
 			case RUN -> run(archive, stackSize, printOption);
 			case MAKE_RUN -> makeRun(archive, stackSize, printOption);
-			case MAKE_CREATE_RUN -> makeSaveRun(archive, stackSize, printOption);
 			
 			}
 		

@@ -5,20 +5,19 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import ensamblador.Transcriptor.Comparacion;
 import ensamblador.Transcriptor.Operacion;
 import ensamblador.Transcriptor.Registro;
+import ensamblador.Transcriptor.Salto;
 
 public class Procesador {
 	
 	private static final int REGISTRO_CNT = Registro.values().length;
-	private static final int OPERACION_CNT = Registro.values().length;
-	private static final int COMPARACION_CNT = Comparacion.values().length + 3; // 3: GE, LE, NE
+	private static final int OPERACION_CNT = Operacion.values().length;
+	private static final int COMPARACION_CNT = Salto.values().length + 3*2; // (3: GE, LE, NE)*2
 	
 	int PC;
 	int cmp;
@@ -33,7 +32,7 @@ public class Procesador {
 		
 		regs = new HashMap<>(REGISTRO_CNT);
 		operaciones = new HashMap<>(OPERACION_CNT);
-		comparaciones = new HashMap<>(COMPARACION_CNT);
+		saltos = new HashMap<>(COMPARACION_CNT);
 		
 		regs.put("A", 0);
 		regs.put("E", 0);
@@ -51,17 +50,22 @@ public class Procesador {
 		operaciones.put("*", (left, right) -> left * right);
 		operaciones.put("/", (left, right) -> left / right);
 		operaciones.put("?", (left, right) -> { cmp = left - right; return left; });
+		operaciones.put("&", (left, right) -> left & right);
+		operaciones.put("|", (left, right) -> left | right);
+		operaciones.put("%", (left, right) -> left ^ right);
 		
-		comparaciones.put(">",  target -> cmp >  0 ? target - 1 : PC);
-		comparaciones.put("<",  target -> cmp <  0 ? target - 1 : PC);
-		comparaciones.put("=",  target -> cmp == 0 ? target - 1 : PC);
-		comparaciones.put("!",  target -> target - 1);
-		comparaciones.put("=>", target -> cmp >= 0 ? target - 1 : PC);
-		comparaciones.put("<=", target -> cmp <= 0 ? target - 1 : PC);
-		comparaciones.put("<>", target -> cmp != 0 ? target - 1 : PC);
-		comparaciones.put(">=", comparaciones.get("=>"));
-		comparaciones.put("=<", comparaciones.get("<="));
-		comparaciones.put("><", comparaciones.get("<>"));
+		saltos.put(">",  target -> cmp >  0 ? target - 1 : PC);
+		saltos.put("<",  target -> cmp <  0 ? target - 1 : PC);
+		saltos.put("=",  target -> cmp == 0 ? target - 1 : PC);
+		saltos.put("!",  target -> target - 1);
+		saltos.put("=>", target -> cmp >= 0 ? target - 1 : PC);
+		saltos.put("<=", target -> cmp <= 0 ? target - 1 : PC);
+		saltos.put("<>", target -> cmp != 0 ? target - 1 : PC);
+		saltos.put(">=", saltos.get("=>"));
+		saltos.put("=<", saltos.get("<="));
+		saltos.put("><", saltos.get("<>"));
+		
+		instruccionesExternas();
 	}
 	
 	public Procesador(String lineas, int stackSize) {
@@ -77,11 +81,11 @@ public class Procesador {
 	public void runPrintEnd() {
 		for (PC = 1; PC < instr.size() && PC > 0; PC++)
 			instr.get(PC).run();
-		System.out.println(this);
+		System.out.print(this);
 	}
 	public void runPrint() {
 		for (PC = 1; PC < instr.size() && PC > 0; PC++) {
-			String cnt = "[" + PC + "] ";
+			String cnt = "[" + PC + "]\t";
 			instr.get(PC).run();
 			System.out.println(cnt + regs+", cmp="+cmp+", "+Arrays.toString(stack));
 		}
@@ -90,7 +94,7 @@ public class Procesador {
 	private void setStack(String reg, int value) { stack[regs.get(reg) - 1] = value; }
 	
 	private HashMap<String, BiFunction<Integer, Integer, Integer>> operaciones;
-	private HashMap<String, Function<Integer, Integer>> comparaciones;
+	private HashMap<String, Function<Integer, Integer>> saltos;
 	
 	private static interface TriConsumer<T, U, R> { void accept(T t, U u, R r); }
 	private TriConsumer<String, BiFunction<Integer, Integer, Integer>, String>
@@ -113,32 +117,16 @@ public class Procesador {
 	private static final Pattern OP_REG_VAL = Pattern.compile("^(" +Registro.REGEX+")[\\s]*("+Operacion.REGEX+")[\\s]*(" +Transcriptor.VALOR+")$");
 	private static final Pattern OP_ACC_VAL = Pattern.compile("^#("+Registro.REGEX+")[\\s]*("+Operacion.REGEX+")[\\s]*(" +Transcriptor.VALOR+")$");
 	
-	private static final Pattern CMP_REG = Pattern.compile("^("+Comparacion.REGEX+")[\\s]*(" +Registro.REGEX+")$");
-	private static final Pattern CMP_ACC = Pattern.compile("^("+Comparacion.REGEX+")[\\s]*#("+Registro.REGEX+")$");
-	private static final Pattern CMP_VAL = Pattern.compile("^("+Comparacion.REGEX+")[\\s]*(" +Transcriptor.VALOR+")$");
+	private static final Pattern CMP_REG = Pattern.compile("^("+Salto.REGEX+")[\\s]*(" +Registro.REGEX+")$");
+	private static final Pattern CMP_ACC = Pattern.compile("^("+Salto.REGEX+")[\\s]*#("+Registro.REGEX+")$");
+	private static final Pattern CMP_VAL = Pattern.compile("^("+Salto.REGEX+")[\\s]*(" +Transcriptor.VALOR+")$");
 
-	public void addInstr(Runnable instruccion) {
-		instr.add(instruccion);
-	}
-	
-	public void addInstr(int left, BiConsumer<Integer, Integer> instruction, int right) {
-		instr.add(() -> instruction.accept(left, right));
-	}
-	
-	public void addInstr(Consumer<Integer> instruction, int target) {
-		instr.add(() -> instruction.accept(target));
-	}
-	
-	public void addJavaInstr(Runnable instruccion) {
-		addInstr(instruccion);
-	}
-	
 	public void addOp(TriConsumer<String, BiFunction<Integer, Integer, Integer>, String> operacion, Matcher matcher) {
-		addInstr(() -> operacion.accept(matcher.group(1), operaciones.get(matcher.group(2)), matcher.group(3)));
+		instr.add(() -> operacion.accept(matcher.group(1).toUpperCase(), operaciones.get(matcher.group(2)), matcher.group(3).toUpperCase()));
 	}
 	
 	public void addCmp(BiConsumer<Function<Integer, Integer>, String> comparacion, Matcher matcher) {
-		addInstr(() -> comparacion.accept(comparaciones.get(matcher.group(1)), matcher.group(2)));
+		instr.add(() -> comparacion.accept(saltos.get(matcher.group(1)), matcher.group(2).toUpperCase()));
 	}
 	
 	public void add(String linea) {
@@ -157,7 +145,11 @@ public class Procesador {
 	
 	@Override
 	public String toString() {
-		return "[" + PC + "] " + regs+", cmp="+cmp+", "+Arrays.toString(stack);
+		return "[" + PC + "]\t" + regs+", cmp="+cmp+", "+Arrays.toString(stack);
 	}
-
+	
+	private void instruccionesExternas() {
+		operaciones.put("$sayChar$", (left, right) -> { System.out.print((char) (int) right); return left + right; });
+	}
+	
 }
