@@ -16,6 +16,10 @@ Las operaciones disponibles actualmente son:
 * \[`*`\] multiplicación
 * \[`/`\] división
 * \[`?`\] comparación
+Existen operaciones especiales, también llamadas funciones. Tienen la forma `A $Nombre$ B`. En ocasiones, aunque se requiera usar un registro, este no se cambiará. Esto es debido a que, para mantener el formato, hará falta tanto un registro `A` como uno `B`.
+Las operaciones especiales disponibles actualmente son:
+* `$sayChar$`: imprime el carácter del valor en O. Mantiene E intacto.
+* `$listenChar$`: lee el primer carácter, guardándolo en E. Mantiene O intacto.
 
 Los saltos tienen la forma `% C`, donde `%` es la comparación y `C` es un registro (\*1), indirección (\*2) o valor (\*3). En caso de que se cumpla la comparación (`cmp % C`), realizará el salto.
 Hay una excepción:
