@@ -106,8 +106,8 @@ public class Launcher {
 			System.out.println("""
 					
 					Funciones: formato E$op$O (o $cmp$A)
-					$sayChar$: imprime el carácter del valor en O. Mantiene E intacto
-					$listenChar$: lee el primer carácter, guardándolo en E. Mantiene O intacto
+					$say$: imprime el carácter del valor en O. Mantiene E intacto
+					$listen$: lee por consola un número, guardándolo en E. Mantiene O intacto
 					""");
 			System.exit(EXITO);
 		}
