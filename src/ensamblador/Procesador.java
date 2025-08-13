@@ -25,6 +25,8 @@ public class Procesador {
 	ArrayList<Runnable> instr;
 	HashMap<String, Integer> regs;
 	int[] stack;
+	
+	private Scanner scanner;
 
 	public Procesador(int stackSize) {
 		stack = new int[stackSize];
@@ -150,8 +152,10 @@ public class Procesador {
 	}
 	
 	private void instruccionesExternas() {
+		scanner = new Scanner(System.in);
+		
 		operaciones.put("$say$", (left, right) -> { System.out.print((char) (int) right); return left; });
-		operaciones.put("$listen$", (_, _) -> { try (Scanner sc = new Scanner(System.in)) { return sc.nextInt(); }});
+		operaciones.put("$listen$", (_, _) -> scanner.nextInt());
 	}
 	
 }
