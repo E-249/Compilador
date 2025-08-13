@@ -100,7 +100,7 @@ public class Procesador {
 	private static interface TriConsumer<T, U, R> { void accept(T t, U u, R r); }
 	private TriConsumer<String, BiFunction<Integer, Integer, Integer>, String>
 			opRegReg = (left, op, right) -> regs.put(left, op.apply(regs.get(left), regs.get(right))),
-			opAccReg = (left, op, right) -> setStack(left, op.apply(regs.get(left), regs.get(right))),
+			opAccReg = (left, op, right) -> setStack(left, op.apply(getStack(left), regs.get(right))),
 			opRegAcc = (left, op, right) -> regs.put(left, op.apply(regs.get(left), getStack(right))),
 			opAccAcc = (left, op, right) -> setStack(left, op.apply(getStack(left), getStack(right))),
 			opRegVal = (left, op, right) -> regs.put(left, op.apply(regs.get(left), Integer.parseInt(right))),
@@ -150,9 +150,8 @@ public class Procesador {
 	}
 	
 	private void instruccionesExternas() {
-		operaciones.put("$sayChar$", (left, right) -> { System.out.print((char) (int) right); return left; });
-		operaciones.put("$listenChar$", (_, _) -> {
-			try (Scanner sc = new Scanner(System.in)) { return (int) sc.next().charAt(0); }});
+		operaciones.put("$say$", (left, right) -> { System.out.print((char) (int) right); return left; });
+		operaciones.put("$listen$", (_, _) -> { try (Scanner sc = new Scanner(System.in)) { return sc.nextInt(); }});
 	}
 	
 }
