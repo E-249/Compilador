@@ -73,18 +73,22 @@ public class Transcriptor {
 		SUB("\\-"),
 		MUL("\\*"),
 		DIV("\\/"),
+		MOD("\\\\"),
 		CMP("\\?"),
 		
 		AND("\\&"),
 		OR("\\|"),
-		XOR("\\%");
+		XNOR("\\!"),
+		LEFT("\\<"),
+		RIGHT("\\>");;
 		private final String simbolo;
 		private Operacion(String simbolo) { this.simbolo = simbolo; }
 		public static void init(HashMap<String, Operacion> operaciones) {
 			for (Operacion operacion : Operacion.values()) operaciones.put(operacion.simbolo, operacion); }
 		@Override public String toString() { return simbolo; }
-		public static final String REGEX = "[" + ASG + ADD + SUB + MUL + DIV + CMP + AND + OR + XOR + "]"
-										+"|"+Modificador.EXT_FUNC;
+		public static final String REGEX =	"[" + ASG + ADD + SUB + MUL + DIV + MOD + CMP
+											+ AND + OR + XNOR + LEFT + RIGHT  + "]"
+											+"|"+Modificador.EXT_FUNC;
 	}
 	
 	public static enum Salto {

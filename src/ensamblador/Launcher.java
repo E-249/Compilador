@@ -5,24 +5,26 @@ import java.io.IOException;
 
 public class Launcher {
 	
-	public static final String VERSION = "1.4";
+	public static final String VERSION = "1.5";
+	
+	@SuppressWarnings("unused")
+	private static final String ensambladorExt = ".coe";
+	private static final String ensambladoExt = ".coee";
 	
 	public static void make(String archive)
 			throws FileNotFoundException, IOException {
 		
-		var a = new Archivos();
-		String leer = a.leerArchivo(archive); //.cos
+		String leer = Archivos.leerArchivo(archive); //.cos
 		
 		var pp = new PreProcesador();
 		String reemplazado = pp.reemplazar(leer);
-		a.escribirArchivo(a.ignorarExtension(archive) + ".ccos", reemplazado);
+		Archivos.escribirArchivo(Archivos.ignorarExtension(archive) + ensambladoExt, reemplazado);
 	}
 	
 	public static void makePrint(String archive)
 			throws FileNotFoundException, IOException {
 		
-		var a = new Archivos();
-		String leer = a.leerArchivo(archive); //.cos
+		String leer = Archivos.leerArchivo(archive); //.cos
 		
 		var pp = new PreProcesador();
 		String reemplazado = pp.reemplazar(leer);
@@ -32,8 +34,7 @@ public class Launcher {
 	public static void run(String archive, int stackSize, PrintOption printOption)
 			throws FileNotFoundException, IOException {
 		
-		var a = new Archivos();
-		String leer = a.leerArchivo(archive); //.ccos
+		String leer = Archivos.leerArchivo(archive); //.ccos
 		
 		var p = new Procesador(leer, stackSize);
 		switch (printOption) {
@@ -48,8 +49,7 @@ public class Launcher {
 	public static void makeRun(String archive, int stackSize, PrintOption printOption)
 			throws FileNotFoundException, IOException {
 		
-		var a = new Archivos();
-		String leer = a.leerArchivo(archive); //.cos
+		String leer = Archivos.leerArchivo(archive); //.cos
 		
 		var pp = new PreProcesador();
 		String reemplazado = pp.reemplazar(leer);
@@ -85,17 +85,17 @@ public class Launcher {
 			System.err.println("No se ha incluido la ruta. Usa el flag \"-h\" para más información."); System.exit(SIN_RUTA); }
 		
 		if (args[0].equals("-h")) {
-			System.out.println("Ensamblador COS");
+			System.out.println("Ensamblador CO");
 			System.out.println("Versión: " + VERSION);
 			System.out.print("""
 					Por defecto: "java -jar cos.jar [archivo] -s 16 -mr -ep"
 					
 					archivo: ruta del archivo incluyendo su extensión
 					
-					-m (make): ensambla archivo ".cos", creando ".ccos"
-					-mp (make print): ensambla archivo ".cos", imprimiendo ".ccos"
-					-r (run): corre archivo ".ccos"
-					-mr (make run): ensambla y corre archivo ".cos", sin crear ".ccos"
+					-m (make): ensambla archivo ".coe", creando ".coee"
+					-mp (make print): ensambla archivo ".coe", imprimiendo ".coee"
+					-r (run): corre archivo ".coee"
+					-mr (make run): ensambla y corre archivo ".coe", sin crear ".coee"
 					
 					-s [tamaño] (size): tamaño de la pila. Cada unidad equivale al tamaño de un entero (int)
 					
@@ -106,8 +106,12 @@ public class Launcher {
 			System.out.println("""
 					
 					Funciones: formato E$op$O (o $cmp$A)
-					$say$: imprime el carácter del valor en O. Mantiene E intacto
-					$listen$: lee por consola un número, guardándolo en E. Mantiene O intacto
+					$say$: imprime el carácter de O
+					$listen$: lee por consola un número y guarda en E
+					$open$: crea una ventana con el tamaño formado por E y O
+					$close$: cierra la ventana
+					$color$: cambia el color al de O
+					$draw$: dibuja un píxel en las coordenadas formadas por E y O
 					""");
 			System.exit(EXITO);
 		}
@@ -157,9 +161,9 @@ public class Launcher {
 			}
 		
 		} catch (FileNotFoundException e) {
-			System.err.println("[ERROR] Archivo no encontrado:\n" + archive); System.exit(ARCHIVO_NO_ENCONTRADO);
+			System.err.println("[ERROR] Archivos no encontrados"); System.exit(ARCHIVO_NO_ENCONTRADO);
 		} catch (IOException e) {
-			System.err.println("[ERROR] Error al leer o crear el archivo para:\n" + archive); System.exit(ERROR_EN_ARCHIVO);
+			System.err.println("[ERROR] Error al leer o crear archivos"); System.exit(ERROR_EN_ARCHIVO);
 		} catch (ArrayIndexOutOfBoundsException e) {
 			System.err.println("[ERROR] Indíce fuera del rango de la pila."); System.exit(INDICE_PILA_FUERA_DE_RANGO);
 		} catch (NullPointerException e) {

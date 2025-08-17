@@ -1,5 +1,7 @@
 package ensamblador;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -9,6 +11,27 @@ import java.util.regex.Pattern;
 import ensamblador.Transcriptor.*;
 
 public class PreProcesador {
+	
+	public String reemplazar(String lineas) throws FileNotFoundException, IOException {
+		HashMap<String, String> expansiones = new HashMap<>();
+		LinkedList<String> instrucciones;
+
+		lineas = eliminarIndentacion(lineas);
+		
+		lineas = ignorarComentarios(lineas);
+		lineas = reemplazarArchivoExterno(lineas);
+		lineas = reemplazarCaracteres(lineas);
+		lineas = guardarExpansiones(lineas, expansiones);
+		lineas = reemplazarExpansiones(lineas, expansiones);
+		lineas = corregir(lineas);
+		
+		instrucciones = normalizar(lineas);
+		instrucciones = guardarLabels(instrucciones, expansiones);
+		lineas = reemplazarAqui(instrucciones);
+		lineas = reemplazarExpansiones(lineas, expansiones);
+		lineas = ignorarResiduos(lineas);
+		return lineas;
+	}
 	
 	private static final String VALOR			= Transcriptor.VALOR;
 	private static final String NOMBRE			= Transcriptor.NOMBRE;
@@ -50,12 +73,16 @@ public class PreProcesador {
 		String llam =				Modificador.NO_AQUI+"("+NOMBRE+")[ \\t]+("+regAccOtr+")"
 									+"|"+ Modificador.NO_AQUI+"("+NOMBRE+")";
 		
+
+		String impor =			"^"+Modificador.ACC+"\\\"(.+)\\\"$";
+		
 		comentario				= Pattern.compile(COMENTARIO, Pattern.MULTILINE);
 		expansion				= Pattern.compile(expan, Pattern.MULTILINE);
 		llamada					= Pattern.compile(llam, Pattern.MULTILINE);
 		instruccion				= Pattern.compile(instr, Pattern.MULTILINE);
 		instruccionEtiqueta		= Pattern.compile(instrEtiq, Pattern.MULTILINE);
 		etiqueta				= Pattern.compile(etiq, Pattern.MULTILINE);
+		importacion				= Pattern.compile(impor, Pattern.MULTILINE);
 	}
 	//////////////////////////////////////////////////////////
 	private final Pattern comentario;
@@ -64,6 +91,7 @@ public class PreProcesador {
 	private final Pattern instruccion;
 	private final Pattern instruccionEtiqueta;
 	private final Pattern etiqueta;
+	private final Pattern importacion;
 	
 	private static final Pattern VACIO			= Pattern.compile("^\\s*\\n", Pattern.MULTILINE);
 	private static final Pattern INDENTACION	= Pattern.compile("^[ \\t]+|[ \\t]+$", Pattern.MULTILINE);
@@ -76,6 +104,17 @@ public class PreProcesador {
 	private String ignorarComentarios(String lineas) {
 		Matcher matcher = comentario.matcher(lineas);
 		return borrarFrom(matcher);
+	}
+	
+	private String reemplazarArchivoExterno(String lineas) throws FileNotFoundException, IOException {
+		Matcher matcher = importacion.matcher(lineas);
+		StringBuffer str = new StringBuffer();
+		
+		while (matcher.find())
+			matcher.appendReplacement(str, Archivos.leerArchivo(matcher.group(1)).replaceAll("\\$", "\\\\\\$"));
+		matcher.appendTail(str);
+		
+		return ignorarComentarios(str.toString());
 	}
 	
 	private String reemplazarCaracteres(String lineas) {
@@ -187,26 +226,6 @@ public class PreProcesador {
 			str.append("\n[").append(i + 1).append("]\t").append(lineasSplit[i]);
 		
 		return str.toString();
-	}
-	
-	public String reemplazar(String lineas) {
-		HashMap<String, String> expansiones = new HashMap<>();
-		LinkedList<String> instrucciones;
-
-		lineas = eliminarIndentacion(lineas);
-		
-		lineas = ignorarComentarios(lineas);
-		lineas = reemplazarCaracteres(lineas);
-		lineas = guardarExpansiones(lineas, expansiones);
-		lineas = reemplazarExpansiones(lineas, expansiones);
-		lineas = corregir(lineas);
-		
-		instrucciones = normalizar(lineas);
-		instrucciones = guardarLabels(instrucciones, expansiones);
-		lineas = reemplazarAqui(instrucciones);
-		lineas = reemplazarExpansiones(lineas, expansiones);
-		lineas = ignorarResiduos(lineas);
-		return lineas;
 	}
 
 }

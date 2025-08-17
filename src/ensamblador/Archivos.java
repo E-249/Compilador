@@ -8,8 +8,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 public class Archivos {
+	private Archivos() {}
 	
-	public String leerArchivo(String ruta) throws FileNotFoundException, IOException {
+	public static String leerArchivo(String ruta) throws FileNotFoundException, IOException {
 
 		try (BufferedReader lector = new BufferedReader(new FileReader(ruta))) {
 			StringBuffer str = new StringBuffer();
@@ -26,7 +27,7 @@ public class Archivos {
 
 	}
 	
-	public void escribirArchivo(String ruta, String texto) throws IOException {
+	public static void escribirArchivo(String ruta, String texto) throws IOException {
 		
 		BufferedWriter writer = new BufferedWriter(new FileWriter(ruta));
 		writer.write(texto);
@@ -34,7 +35,7 @@ public class Archivos {
 			
 	}
 	
-	public String ignorarExtension(String ruta) {
+	public static String ignorarExtension(String ruta) {
 		int dot = ruta.lastIndexOf('.');
 		return ruta.substring(0, dot);
 	}

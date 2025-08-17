@@ -1,5 +1,8 @@
 package ensamblador;
 
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -9,6 +12,9 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.swing.JFrame;
+import javax.swing.JPanel;
 
 import ensamblador.Transcriptor.Operacion;
 import ensamblador.Transcriptor.Registro;
@@ -52,10 +58,13 @@ public class Procesador {
 		operaciones.put("-", (left, right) -> left - right);
 		operaciones.put("*", (left, right) -> left * right);
 		operaciones.put("/", (left, right) -> left / right);
+		operaciones.put("\\", (left, right) -> left % right);
 		operaciones.put("?", (left, right) -> { cmp = left - right; return left; });
 		operaciones.put("&", (left, right) -> left & right);
 		operaciones.put("|", (left, right) -> left | right);
-		operaciones.put("%", (left, right) -> left ^ right);
+		operaciones.put("!", (left, right) -> left ^ right);
+		operaciones.put("<", (left, right) -> left << right);
+		operaciones.put(">", (left, right) -> left >> right);
 		
 		saltos.put(">",  target -> cmp >  0 ? target - 1 : PC);
 		saltos.put("<",  target -> cmp <  0 ? target - 1 : PC);
@@ -156,6 +165,49 @@ public class Procesador {
 		
 		operaciones.put("$say$", (left, right) -> { System.out.print((char) (int) right); return left; });
 		operaciones.put("$listen$", (_, _) -> scanner.nextInt());
+		
+		operaciones.put("$open$", (left, right)	->	{ createWindow(left, right);	return left; });
+		operaciones.put("$close$", (left, _) ->		{ closeWindow();				return left; });
+		operaciones.put("$color$", (left, right) ->	{ changeColor(right);			return left; });
+		operaciones.put("$draw$", (left, right) ->	{ drawPixel(left, right);		return left; });
+	}
+	
+	private JFrame window = null;
+	private JPanel panel;
+	private BufferedImage imagen;
+	private Color color;
+	
+	private void createWindow(int width, int height) {
+		window = new JFrame();
+		imagen = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+		color = Color.WHITE;
+		panel = new JPanel() {
+			private static final long serialVersionUID = 1L;
+			@Override
+			public void paint(Graphics g) {
+				g.drawImage(imagen, 0, 0, null);
+			}
+		};
+		window.setSize(width, height);
+		window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		window.setContentPane(panel);
+		window.setLocationRelativeTo(null);
+		
+		window.setVisible(true);
+	}
+	
+	private void closeWindow() {
+		if (window != null)
+			window.dispose();
+	}
+	
+	private void changeColor(int color) {
+		this.color = new Color(color);
+	}
+	
+	private void drawPixel(int x, int y) {
+		imagen.setRGB(x, y, color.getRGB());
+		window.repaint(0, x, y, 1, 1);
 	}
 	
 }
