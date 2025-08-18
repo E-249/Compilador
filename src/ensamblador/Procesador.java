@@ -1,6 +1,6 @@
 package ensamblador;
 
-import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
@@ -99,7 +99,7 @@ public class Procesador {
 		for (PC = 1; PC < instr.size() && PC > 0; PC++) {
 			String cnt = "[" + PC + "]\t";
 			instr.get(PC).run();
-			System.out.println(cnt + regs+", cmp="+cmp+", "+Arrays.toString(stack));
+			System.out.println(cnt + regs+", cmp="+cmp+", color=h"+Integer.toHexString(color).toUpperCase()+", "+Arrays.toString(stack));
 		}
 	}
 	private int getStack(String reg) { return stack[regs.get(reg) - 1]; }
@@ -157,7 +157,7 @@ public class Procesador {
 	
 	@Override
 	public String toString() {
-		return regs+", cmp="+cmp+", "+Arrays.toString(stack);
+		return regs+", "+Arrays.toString(stack);
 	}
 	
 	private void instruccionesExternas() {
@@ -175,12 +175,12 @@ public class Procesador {
 	private JFrame window = null;
 	private JPanel panel;
 	private BufferedImage imagen;
-	private Color color;
+	private int color;
 	
 	private void createWindow(int width, int height) {
 		window = new JFrame();
 		imagen = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-		color = Color.WHITE;
+		color = 0xFFFFFF;
 		panel = new JPanel() {
 			private static final long serialVersionUID = 1L;
 			@Override
@@ -188,10 +188,14 @@ public class Procesador {
 				g.drawImage(imagen, 0, 0, null);
 			}
 		};
-		window.setSize(width, height);
-		window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		
+		panel.setPreferredSize(new Dimension(width, height));
 		window.setContentPane(panel);
+		window.pack();
+		
+		window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		window.setLocationRelativeTo(null);
+		window.setResizable(false);
 		
 		window.setVisible(true);
 	}
@@ -202,12 +206,12 @@ public class Procesador {
 	}
 	
 	private void changeColor(int color) {
-		this.color = new Color(color);
+		this.color = color;
 	}
 	
 	private void drawPixel(int x, int y) {
-		imagen.setRGB(x, y, color.getRGB());
-		window.repaint(0, x, y, 1, 1);
+		imagen.setRGB(x, y, color);
+		window.repaint();
 	}
 	
 }

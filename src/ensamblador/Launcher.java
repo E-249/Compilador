@@ -165,7 +165,7 @@ public class Launcher {
 		} catch (IOException e) {
 			System.err.println("[ERROR] Error al leer o crear archivos"); System.exit(ERROR_EN_ARCHIVO);
 		} catch (ArrayIndexOutOfBoundsException e) {
-			System.err.println("[ERROR] Indíce fuera del rango de la pila."); System.exit(INDICE_PILA_FUERA_DE_RANGO);
+			System.err.println("[ERROR] Indíce fuera del rango de la pila o de la imagen."); System.exit(INDICE_PILA_FUERA_DE_RANGO);
 		} catch (NullPointerException e) {
 			System.err.println("[ERROR] Funciones o parámetros erróneos."); System.exit(FUNCIONES_O_PARAMETROS_ERRONEOS);
 		} catch (Exception e) {
