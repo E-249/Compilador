@@ -1,22 +1,27 @@
 package ensamblador;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
 public class Launcher {
 	
-	public static final String VERSION = "1.5";
+	public static final String VERSION = "1.5.3";
 	
 	@SuppressWarnings("unused")
 	private static final String ensambladorExt = ".coe";
 	private static final String ensambladoExt = ".coee";
+	
+	private static String getRuta(String archive) {
+		return new File(archive).getAbsoluteFile().getParent() + "\\";
+	}
 	
 	public static void make(String archive)
 			throws FileNotFoundException, IOException {
 		
 		String leer = Archivos.leerArchivo(archive); //.cos
 		
-		var pp = new PreProcesador();
+		var pp = new PreProcesador(getRuta(archive));
 		String reemplazado = pp.reemplazar(leer);
 		Archivos.escribirArchivo(Archivos.ignorarExtension(archive) + ensambladoExt, reemplazado);
 	}
@@ -26,7 +31,7 @@ public class Launcher {
 		
 		String leer = Archivos.leerArchivo(archive); //.cos
 		
-		var pp = new PreProcesador();
+		var pp = new PreProcesador(getRuta(archive));
 		String reemplazado = pp.reemplazar(leer);
 		System.out.print(pp.contarLineas(reemplazado));
 	}
@@ -51,7 +56,7 @@ public class Launcher {
 		
 		String leer = Archivos.leerArchivo(archive); //.cos
 		
-		var pp = new PreProcesador();
+		var pp = new PreProcesador(getRuta(archive));
 		String reemplazado = pp.reemplazar(leer);
 		
 		var p = new Procesador(reemplazado, stackSize);
@@ -77,8 +82,7 @@ public class Launcher {
 	static final int INDICE_PILA_FUERA_DE_RANGO = 7;
 	static final int FUNCIONES_O_PARAMETROS_ERRONEOS = 8;
 	static final int ERROR_DESCONOCIDO = 9;
-	// ./cos "test/Entity"
-	// ./cos "test/Entity" -mr -s 16 -p true
+
 	public static void main(String[] args) {
 		
 		if (args.length < 1) {

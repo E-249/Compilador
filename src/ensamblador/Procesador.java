@@ -89,11 +89,13 @@ public class Procesador {
 	public void run() {
 		for (PC = 1; PC < instr.size() && PC > 0; PC++)
 			instr.get(PC).run();
+		closeWindow();
 	}
 	public void runPrintEnd() {
 		for (PC = 1; PC < instr.size() && PC > 0; PC++)
 			instr.get(PC).run();
 		System.out.print(this);
+		closeWindow();
 	}
 	public void runPrint() {
 		for (PC = 1; PC < instr.size() && PC > 0; PC++) {
@@ -101,6 +103,7 @@ public class Procesador {
 			instr.get(PC).run();
 			System.out.println(cnt + regs+", cmp="+cmp+", color=h"+Integer.toHexString(color).toUpperCase()+", "+Arrays.toString(stack));
 		}
+		closeWindow();
 	}
 	private int getStack(String reg) { return stack[regs.get(reg) - 1]; }
 	private void setStack(String reg, int value) { stack[regs.get(reg) - 1] = value; }
@@ -175,12 +178,11 @@ public class Procesador {
 	private JFrame window = null;
 	private JPanel panel;
 	private BufferedImage imagen;
-	private int color;
+	private int color = 0xFFFFFF;
 	
 	private void createWindow(int width, int height) {
 		window = new JFrame();
 		imagen = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-		color = 0xFFFFFF;
 		panel = new JPanel() {
 			private static final long serialVersionUID = 1L;
 			@Override
@@ -193,7 +195,7 @@ public class Procesador {
 		window.setContentPane(panel);
 		window.pack();
 		
-		window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		window.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		window.setLocationRelativeTo(null);
 		window.setResizable(false);
 		

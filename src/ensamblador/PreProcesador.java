@@ -42,7 +42,9 @@ public class PreProcesador {
 	private static final String COMENTARIO		= Comentario.REGEX;
 	private static final String EXPANSION		= Expansion.REGEX;
 	//////////////////////////////////////////////////////////
-	public PreProcesador() {
+	private String ruta;
+	public PreProcesador(String ruta) {
+		this.ruta = ruta;
 		
 		String acceso =				Modificador.ACC + REGISTRO;
 		String otros =				VALOR
@@ -111,7 +113,7 @@ public class PreProcesador {
 		StringBuffer str = new StringBuffer();
 		
 		while (matcher.find())
-			matcher.appendReplacement(str, Archivos.leerArchivo(matcher.group(1)).replaceAll("\\$", "\\\\\\$"));
+			matcher.appendReplacement(str, Archivos.leerArchivo(ruta + matcher.group(1)).replaceAll("\\$", "\\\\\\$"));
 		matcher.appendTail(str);
 		
 		return ignorarComentarios(str.toString());
@@ -131,7 +133,7 @@ public class PreProcesador {
 		Matcher matcher = expansion.matcher(lineas);
 		
 		while (matcher.find())
-			expansiones.put(matcher.group(1), matcher.group(2));
+			expansiones.put(matcher.group(1), matcher.group(2).replaceAll("\\$", "\\\\\\$"));
 		
 		return borrarFrom(matcher);
 	}
